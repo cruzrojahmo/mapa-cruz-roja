@@ -30,10 +30,7 @@ body {
 #filtros { left: 10px; width: 220px; }
 #info { right: 10px; width: 220px; }
 
-h3 {
-    margin-top: 0;
-    color: #C8102E;
-}
+h3 { margin-top: 0; color: #C8102E; }
 </style>
 </head>
 
@@ -43,65 +40,66 @@ h3 {
 
 <div id="filtros" class="panel">
 <h3>Filtros</h3>
-<label>Hospital:</label><br>
-<select>
-<option>Todos</option>
-<option>IMSS</option>
-<option>HGE</option>
-<option>CIMA</option>
-</select><br><br>
-
-<label>Tipo de evento:</label><br>
-<select>
-<option>Todos</option>
-<option>Accidente</option>
-<option>Médico</option>
-<option>Violencia</option>
-</select>
+<p>Ubicación en tiempo real activa</p>
 </div>
 
 <div id="info" class="panel">
-<h3>Información</h3>
-<p><b>Hospital sugerido:</b><br>HGE</p>
-<p><b>ETA:</b> 8 min</p>
-<p><b>Estado:</b> Disponible</p>
+<h3>Unidad</h3>
+<p><b>Estado:</b> En línea</p>
+<p><b>GPS:</b> Activo</p>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-// Inicializar mapa en Hermosillo
-var map = L.map('map').setView([29.0729, -110.9559], 12);
+// Crear mapa en Hermosillo
+var map = L.map('map').setView([29.0729, -110.9559], 13);
 
-// Capa base OpenStreetMap
+// Capa base
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// Iconos por estado
-function colorEstado(estado){
-    if(estado === "disponible") return "green";
-    if(estado === "medio") return "orange";
-    return "red";
+// Icono de ambulancia
+var ambulanciaIcon = L.icon({
+    iconUrl: "https://cdn-icons-png.flaticon.com/512/2967/2967350.png",
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
+});
+
+var marcadorAmbulancia = null;
+
+// Función de actualización GPS
+function actualizarPosicion(pos) {
+    var lat = pos.coords.latitude;
+    var lng = pos.coords.longitude;
+
+    if (!marcadorAmbulancia) {
+        marcadorAmbulancia = L.marker([lat, lng], {icon: ambulanciaIcon})
+            .addTo(map)
+            .bindPopup("🚑 Unidad en servicio");
+    } else {
+        marcadorAmbulancia.setLatLng([lat, lng]);
+    }
+
+    map.setView([lat, lng], 15);
 }
 
-// Hospitales de ejemplo
-var hospitales = [
-    {nombre:"Hospital General del Estado", lat:29.090, lng:-110.963, estado:"disponible"},
-    {nombre:"IMSS Zona 14", lat:29.075, lng:-110.938, estado:"medio"},
-    {nombre:"CIMA", lat:29.101, lng:-110.950, estado:"saturado"}
-];
+// Manejo de errores
+function errorGPS(err) {
+    alert("No se pudo obtener GPS. Activa ubicación en el navegador.");
+}
 
-// Agregar marcadores
-hospitales.forEach(h => {
-    L.circleMarker([h.lat, h.lng], {
-        radius: 10,
-        color: colorEstado(h.estado),
-        fillOpacity: 0.8
-    })
-    .addTo(map)
-    .bindPopup("<b>" + h.nombre + "</b><br>Estado: " + h.estado);
-});
+// Activar seguimiento en tiempo real
+if (navigator.geolocation) {
+    navigator.geolocation.watchPosition(actualizarPosicion, errorGPS, {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000
+    });
+} else {
+    alert("Tu navegador no soporta geolocalización.");
+}
 </script>
 
 </body>
