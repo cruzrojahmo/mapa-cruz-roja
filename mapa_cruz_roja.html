@@ -1,36 +1,29 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<title>Cruz Roja Hermosillo - Centro de Monitoreo</title>
+<meta charset="utf-8"/>
+<title>Centro de Despacho – Cruz Roja Hermosillo</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #F4F4F4;
-}
-
-#map {
-    height: 100vh;
-}
+body { margin:0; font-family: Arial; background:#0f172a; }
+#map { height:100vh; }
 
 .panel {
-    position: absolute;
-    top: 10px;
-    background: white;
-    padding: 12px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    z-index: 1000;
+ position:absolute;
+ top:10px;
+ right:10px;
+ width:260px;
+ background:white;
+ padding:12px;
+ border-radius:10px;
+ box-shadow:0 4px 12px rgba(0,0,0,.3);
+ z-index:1000;
 }
 
-#filtros { left: 10px; width: 220px; }
-#info { right: 10px; width: 220px; }
-
-h3 { margin-top: 0; color: #C8102E; }
+h3 { margin:0 0 8px; color:#C8102E; }
+.estado { font-weight:bold; }
 </style>
 </head>
 
@@ -38,69 +31,104 @@ h3 { margin-top: 0; color: #C8102E; }
 
 <div id="map"></div>
 
-<div id="filtros" class="panel">
-<h3>Filtros</h3>
-<p>Ubicación en tiempo real activa</p>
-</div>
-
-<div id="info" class="panel">
-<h3>Unidad</h3>
-<p><b>Estado:</b> En línea</p>
-<p><b>GPS:</b> Activo</p>
+<div class="panel">
+<h3>Estado hospitalario</h3>
+<div id="hospitalesLista"></div>
+<hr>
+<h3>Clima actual</h3>
+<div id="clima"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 <script>
-// Crear mapa en Hermosillo
-var map = L.map('map').setView([29.0729, -110.9559], 13);
+// ================= MAPA BASE =================
+const map = L.map('map').setView([29.0729,-110.9559],12);
 
-// Capa base
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+ attribution:'© OpenStreetMap'
 }).addTo(map);
 
-// Icono de ambulancia
-var ambulanciaIcon = L.icon({
-    iconUrl: "https://cdn-icons-png.flaticon.com/512/2967/2967350.png",
-    iconSize: [40, 40],
-    iconAnchor: [20, 20]
+// ================= ICONO AMBULANCIA =================
+const iconAmb = L.icon({
+ iconUrl:"https://cdn-icons-png.flaticon.com/512/2967/2967350.png",
+ iconSize:[28,28]
 });
 
-var marcadorAmbulancia = null;
+// ================= 20 AMBULANCIAS EN VIVO (SIMULADAS) =================
+const ambulancias = [];
+for(let i=0;i<20;i++){
+ const lat = 29.07 + (Math.random()-0.5)*0.1;
+ const lng = -110.95 + (Math.random()-0.5)*0.1;
 
-// Función de actualización GPS
-function actualizarPosicion(pos) {
-    var lat = pos.coords.latitude;
-    var lng = pos.coords.longitude;
+ const m = L.marker([lat,lng],{icon:iconAmb})
+   .addTo(map)
+   .bindPopup("Unidad CR-"+(i+1));
 
-    if (!marcadorAmbulancia) {
-        marcadorAmbulancia = L.marker([lat, lng], {icon: ambulanciaIcon})
-            .addTo(map)
-            .bindPopup("🚑 Unidad en servicio");
-    } else {
-        marcadorAmbulancia.setLatLng([lat, lng]);
-    }
-
-    map.setView([lat, lng], 15);
+ ambulancias.push(m);
 }
 
-// Manejo de errores
-function errorGPS(err) {
-    alert("No se pudo obtener GPS. Activa ubicación en el navegador.");
+// Movimiento automático cada 5 s
+setInterval(()=>{
+ ambulancias.forEach(m=>{
+   const p = m.getLatLng();
+   const lat = p.lat + (Math.random()-0.5)*0.005;
+   const lng = p.lng + (Math.random()-0.5)*0.005;
+   m.setLatLng([lat,lng]);
+ });
+},5000);
+
+// ================= HOSPITALES =================
+const hospitales = [
+ {n:"HGE",lat:29.09,lng:-110.963,e:"verde"},
+ {n:"IMSS 14",lat:29.075,lng:-110.938,e:"amarillo"},
+ {n:"ISSSTE",lat:29.084,lng:-110.97,e:"rojo"},
+ {n:"CIMA",lat:29.10,lng:-110.95,e:"verde"}
+];
+
+function color(e){
+ if(e==="verde") return "#22c55e";
+ if(e==="amarillo") return "#facc15";
+ return "#ef4444";
 }
 
-// Activar seguimiento en tiempo real
-if (navigator.geolocation) {
-    navigator.geolocation.watchPosition(actualizarPosicion, errorGPS, {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000
-    });
-} else {
-    alert("Tu navegador no soporta geolocalización.");
+hospitales.forEach(h=>{
+ L.circleMarker([h.lat,h.lng],{
+  radius:10,
+  color:color(h.e),
+  fillOpacity:.9
+ }).addTo(map).bindPopup(h.n);
+
+ const div=document.createElement("div");
+ div.innerHTML=`${h.n}: <span class="estado" style="color:${color(h.e)}">${h.e}</span>`;
+ hospitalesLista.appendChild(div);
+});
+
+// ================= HEATMAP DE SERVICIOS =================
+const puntos=[];
+for(let i=0;i<80;i++){
+ puntos.push([
+ 29.07+(Math.random()-0.5)*0.15,
+ -110.95+(Math.random()-0.5)*0.15,
+ Math.random()
+ ]);
 }
+
+L.heatLayer(puntos,{radius:25}).addTo(map);
+
+// ================= CLIMA REAL =================
+// ⚠️ usa tu propia API gratuita luego
+const API="https://api.open-meteo.com/v1/forecast?latitude=29.07&longitude=-110.95&current_weather=true";
+
+fetch(API)
+ .then(r=>r.json())
+ .then(d=>{
+   const t=d.current_weather.temperature;
+   const v=d.current_weather.windspeed;
+   clima.innerHTML=`🌡️ ${t} °C<br>💨 Viento ${v} km/h`;
+ });
+
 </script>
-
 </body>
 </html>
