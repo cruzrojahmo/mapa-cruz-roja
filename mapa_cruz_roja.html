@@ -66,8 +66,13 @@ var hospitales = [
 ["Centro Médico del Noroeste",29.0814119646,-110.9506239757],
 ["Hospital CIMA",29.0647069176,-110.9613672007],
 ["Hospital San José",29.1206929305,-110.9519082812],
-["ISSSTE Hospital Ocaranza",29.1101520739,-110.9507142182],
-["Hospital Infantil del Estado",29.1163953149,-110.9717606065]
+["ISSSTE Hospital Dr. Fernando Ocaranza",29.1101520739,-110.9507142182],
+["SSA Hospital Integral de la Mujer",29.115949405330400,-110.97256351082],
+["Hospital Militar Regional",29.114872225403700,-110.948626122958],
+["ISSSTESON Hospital Dr. Ignacio Chavez",29.096798578712000,-110.953480785785],
+["Hospital San Diego de Alcala", 29.08964351884390,-110.952141600676],
+["Hospital Licona",29.08144383513480,-110.949337764691],
+["SSA Hospital Infantil del Estado",29.1163953149,-110.9717606065]
 ];
 
 hospitales.forEach(h => {
@@ -87,32 +92,9 @@ var trafico = L.tileLayer(
 // ⚠️ Necesitarás API gratis en:
 // https://openweathermap.org/api
 var clima = L.tileLayer(
-  "https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=90306574d689f75a1143080cd7eae232",
+  "https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=b99d75364d37e9fd2bedb86b7e42743e",
   { opacity: 0.5 }
 );
-
-// ================= ZONAS DE RIESGO =================
-var zonasRiesgo = L.layerGroup();
-
-var colonias = [
-"Villa Verde","Laura Alicia Frías","Las Cuevitas","La Choya","Los Arroyos",
-"Solidaridad","4 Olivos","Caridad","Agualurca","Altares",
-"Nuevo Hermosillo","Vista Real","Las Minitas","Sahuaro","Arco Iris"
-];
-
-// Marcado aproximado en Hermosillo (visual despacho)
-colonias.forEach((c, i) => {
-  var lat = 29.05 + (Math.random() * 0.1);
-  var lng = -111.0 + (Math.random() * 0.1);
-
-  L.circle([lat, lng], {
-    color: "red",
-    fillColor: "#ff4d4d",
-    fillOpacity: 0.35,
-    radius: 600
-  }).bindPopup("Zona de riesgo:<br><b>" + c + "</b>")
-    .addTo(zonasRiesgo);
-});
 
 // ================= CONTROL DE CAPAS =================
 var capas = {
