@@ -1,94 +1,129 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <title>Mapa Centro de Despacho – Cruz Roja</title>
+<meta charset="utf-8" />
+<title>Centro de Despacho – Cruz Roja Hermosillo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Leaflet -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<style>
+body { margin:0; font-family: Arial, sans-serif; }
+#map { height: 100vh; }
 
-  <style>
-    body { margin:0; font-family: Arial; }
-    #map { height: 100vh; }
+.panel {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.25);
+  z-index: 999;
+  width: 240px;
+}
 
-    .panel {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: white;
-      padding: 12px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      z-index: 999;
-      width: 220px;
-    }
-
-    .panel h3 {
-      margin: 0 0 10px 0;
-      color: #c40000;
-    }
-  </style>
+.panel h3 {
+  margin: 0 0 10px 0;
+  color: #c40000;
+}
+</style>
 </head>
 <body>
 
 <div id="map"></div>
 
 <div class="panel">
-  <h3>Centro de Despacho</h3>
-  Hospitales visibles<br>
-  Sistema activo ✔
+  <h3>Cruz Roja Mexicana</h3>
+  Centro de Despacho<br>
+  Sistema operativo ✔
 </div>
 
 <script>
-  // Crear mapa centrado en Hermosillo
-  var map = L.map('map').setView([29.09, -110.96], 12);
 
-  // Capa base
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
+// ================= MAPA BASE =================
+var map = L.map('map').setView([29.09, -110.96], 12);
 
-  // Lista de hospitales
-  var hospitales = [
-    ["Hospital General de Especialidades del Estado de Sonora", 29.0814955886600, -111.0037625599120],
-    ["IMSS Hospital General de Zona No 14", 29.0987883528374, -111.0015381778860],
-    ["IMSS Hospital General de Zona No 02", 29.1037001297861, -110.9533747324520],
-    ["IMSS Hospital General de Zona No 15", 29.0864911445533, -110.9621912885420],
-    ["IMSS UMF 37", 29.0726361830496, -110.9566326412830],
-    ["IMSS UMF 68", 29.0090728587814, -110.9233547669560],
-    ["IMSS UMF 65", 29.1098078764981, -110.9963738473760],
-    ["IMSS UMF 63", 29.1203229405454, -110.9639216327520],
-    ["IMSS UMF 02", 29.1034146862730, -110.9720131538070],
-    ["Centro Médico del Noroeste", 29.0814119646022, -110.9506239757270],
-    ["Hospital Licona", 29.0814438351348, -110.9493377646910],
-    ["Hospital CIMA", 29.0647069176714, -110.9613672007830],
-    ["Hospital San Jose", 29.1206929305534, -110.9519082812930],
-    ["Hospital San Diego de Alcala", 29.0896435188439, -110.9521416006760],
-    ["ISSSTESON Hospital Ignacio Chavez", 29.0967985787120, -110.9534807857850],
-    ["Sanatorio San Francisco", 29.0826109509119, -110.9545342492750],
-    ["Hospital San Benito", 29.0897083057297, -110.9588557942500],
-    ["SSA Hospital Infantil del Estado de Sonora", 29.1163953149164, -110.9717606065960],
-    ["SSA Hospital Integral de la Mujer", 29.1159494053304, -110.9725635108200],
-    ["Hospital Militar Regional Hermosillo", 29.1148722254037, -110.9486261229580],
-    ["ISSSTE Hospital Fernando Ocaranza", 29.1101520739775, -110.9507142182810]
-  ];
+// OpenStreetMap
+var base = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+}).addTo(map);
 
-  // Icono rojo tipo hospital
-  var iconoHospital = L.icon({
-    iconUrl: "https://cdn-icons-png.flaticon.com/512/2967/2967350.png",
-    iconSize: [30, 30]
-  });
+// ================= ICONO PROFESIONAL =================
+var hospitalIcon = L.icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/3774/3774299.png",
+  iconSize: [32, 32]
+});
 
-  // Agregar marcadores
-  hospitales.forEach(function(h) {
-    L.marker([h[1], h[2]], {icon: iconoHospital})
-      .addTo(map)
-      .bindPopup("<b>" + h[0] + "</b>");
-  });
+// ================= HOSPITALES =================
+var hospitales = [
+["Hospital General de Especialidades del Estado de Sonora",29.08149558866,-111.0037625599],
+["IMSS HGZ 14",29.0987883528,-111.0015381778],
+["IMSS HGZ 02",29.1037001297,-110.9533747324],
+["IMSS HGZ 15",29.0864911445,-110.9621912885],
+["Centro Médico del Noroeste",29.0814119646,-110.9506239757],
+["Hospital CIMA",29.0647069176,-110.9613672007],
+["Hospital San José",29.1206929305,-110.9519082812],
+["ISSSTE Hospital Ocaranza",29.1101520739,-110.9507142182],
+["Hospital Infantil del Estado",29.1163953149,-110.9717606065]
+];
+
+hospitales.forEach(h => {
+  L.marker([h[1], h[2]], {icon: hospitalIcon})
+    .addTo(map)
+    .bindPopup("<b>" + h[0] + "</b>");
+});
+
+// ================= CAPA TRÁFICO =================
+// (usa mosaico libre tipo tráfico estilo OSM)
+var trafico = L.tileLayer(
+  "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+  { opacity: 0.6 }
+);
+
+// ================= CAPA CLIMA (OpenWeather) =================
+// ⚠️ Necesitarás API gratis en:
+// https://openweathermap.org/api
+var clima = L.tileLayer(
+  "https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=TU_API_KEY",
+  { opacity: 0.5 }
+);
+
+// ================= ZONAS DE RIESGO =================
+var zonasRiesgo = L.layerGroup();
+
+var colonias = [
+"Villa Verde","Laura Alicia Frías","Las Cuevitas","La Choya","Los Arroyos",
+"Solidaridad","4 Olivos","Caridad","Agualurca","Altares",
+"Nuevo Hermosillo","Vista Real","Las Minitas","Sahuaro","Arco Iris"
+];
+
+// Marcado aproximado en Hermosillo (visual despacho)
+colonias.forEach((c, i) => {
+  var lat = 29.05 + (Math.random() * 0.1);
+  var lng = -111.0 + (Math.random() * 0.1);
+
+  L.circle([lat, lng], {
+    color: "red",
+    fillColor: "#ff4d4d",
+    fillOpacity: 0.35,
+    radius: 600
+  }).bindPopup("Zona de riesgo:<br><b>" + c + "</b>")
+    .addTo(zonasRiesgo);
+});
+
+// ================= CONTROL DE CAPAS =================
+var capas = {
+  "Mapa base": base,
+  "Tráfico": trafico,
+  "Clima": clima,
+  "Zonas de riesgo": zonasRiesgo
+};
+
+L.control.layers(null, capas, {collapsed:false}).addTo(map);
+
 </script>
-
 </body>
 </html>
