@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Cruz Roja Hermosillo - Centro de Monitoreo</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #F4F4F4;
+}
+
+#map {
+    height: 100vh;
+}
+
+.panel {
+    position: absolute;
+    top: 10px;
+    background: white;
+    padding: 12px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+#filtros { left: 10px; width: 220px; }
+#info { right: 10px; width: 220px; }
+
+h3 {
+    margin-top: 0;
+    color: #C8102E;
+}
+</style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<div id="filtros" class="panel">
+<h3>Filtros</h3>
+<label>Hospital:</label><br>
+<select>
+<option>Todos</option>
+<option>IMSS</option>
+<option>HGE</option>
+<option>CIMA</option>
+</select><br><br>
+
+<label>Tipo de evento:</label><br>
+<select>
+<option>Todos</option>
+<option>Accidente</option>
+<option>Médico</option>
+<option>Violencia</option>
+</select>
+</div>
+
+<div id="info" class="panel">
+<h3>Información</h3>
+<p><b>Hospital sugerido:</b><br>HGE</p>
+<p><b>ETA:</b> 8 min</p>
+<p><b>Estado:</b> Disponible</p>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+// Inicializar mapa en Hermosillo
+var map = L.map('map').setView([29.0729, -110.9559], 12);
+
+// Capa base OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+}).addTo(map);
+
+// Iconos por estado
+function colorEstado(estado){
+    if(estado === "disponible") return "green";
+    if(estado === "medio") return "orange";
+    return "red";
+}
+
+// Hospitales de ejemplo
+var hospitales = [
+    {nombre:"Hospital General del Estado", lat:29.090, lng:-110.963, estado:"disponible"},
+    {nombre:"IMSS Zona 14", lat:29.075, lng:-110.938, estado:"medio"},
+    {nombre:"CIMA", lat:29.101, lng:-110.950, estado:"saturado"}
+];
+
+// Agregar marcadores
+hospitales.forEach(h => {
+    L.circleMarker([h.lat, h.lng], {
+        radius: 10,
+        color: colorEstado(h.estado),
+        fillOpacity: 0.8
+    })
+    .addTo(map)
+    .bindPopup("<b>" + h.nombre + "</b><br>Estado: " + h.estado);
+});
+</script>
+
+</body>
+</html>
