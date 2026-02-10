@@ -100,11 +100,12 @@ hospitalesData.forEach(function(h) {
 // Añadir hospitales al inicio
 layerHospitales.addTo(map);
 
-// 6. Control de Capas (Interactivo)
-var overlayMaps = {
-  "Hospitales": layerHospitales,
-  "Vista Tráfico": trafico,
-  "Precipitación": clima
+// ================= CONTROL DE CAPAS =================
+// Organizado para que el usuario pueda prender/apagar
+var capasSuperpuestas = {
+  "🏥 Mostrar Hospitales": layerHospitales,
+  "🚗 Tráfico en tiempo real": trafico,
+  "🌧️ Radar de Lluvia": clima
 };
 
 L.control.layers(null, overlayMaps, {collapsed: false}).addTo(map);
