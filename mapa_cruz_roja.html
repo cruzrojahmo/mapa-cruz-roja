@@ -1,114 +1,140 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8" />
-<title>Centro de Despacho – Cruz Roja Hermosillo</title>
+<meta charset="utf-8"/>
+<title>C5 Cruz Roja – Hermosillo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <style>
-  body { margin:0; padding:0; font-family: 'Segoe UI', Arial, sans-serif; }
-  #map { height: 100vh; width: 100vw; background: #e5e3df; } /* Fondo gris por si tarda en cargar */
+body { margin:0; font-family: Arial, sans-serif; background:#0b0f14; }
+#map { height:100vh; }
 
-  /* Panel centrado superior */
-  .header-panel {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: white;
-    padding: 12px 30px;
-    border-radius: 50px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    z-index: 1000;
-    text-align: center;
-    border-top: 5px solid #c40000;
-    min-width: 280px;
-    pointer-events: none; /* Permite hacer clic a través del panel al mapa */
-  }
+/* PANEL C5 */
+.panel {
+  position:absolute;
+  top:15px;
+  left:15px;
+  width:260px;
+  background:#111821;
+  color:white;
+  padding:15px;
+  border-radius:12px;
+  box-shadow:0 0 20px rgba(0,0,0,0.6);
+  z-index:999;
+}
 
-  .header-panel h3 { margin: 0; color: #c40000; font-size: 1.1rem; }
-  .header-panel p { margin: 2px 0 0 0; font-size: 0.85rem; color: #555; }
-  .status-dot { height: 10px; width: 10px; background: #2ecc71; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.panel h2 {
+  margin:0 0 10px 0;
+  color:#ff2b2b;
+}
 
-  /* Ajuste para que el control de capas se vea bien */
-  .leaflet-top.leaflet-right { top: 10px; }
+.estado {
+  padding:6px 10px;
+  border-radius:6px;
+  margin-top:6px;
+  font-size:13px;
+}
+
+.disponible { background:#1f8b4c; }
+.saturado { background:#b32020; }
+.proceso { background:#b38b1f; }
+
 </style>
 </head>
 <body>
 
-<div class="header-panel">
-  <h3>CRUZ ROJA MEXICANA</h3>
-  <p><span class="status-dot"></span>Centro de Despacho | Sistema Operativo</p>
-</div>
-
 <div id="map"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div class="panel">
+  <h2>C5 Cruz Roja</h2>
+  <div id="info">Sistema activo</div>
+</div>
 
 <script>
-// 1. Inicializar mapa
-var map = L.map('map', {
-    center: [29.09, -110.96],
-    zoom: 13
-});
 
-// 2. Capa base obligatoria (OpenStreetMap)
-var base = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '© OpenStreetMap'
+// ================= MAPA BASE =================
+var map = L.map('map').setView([29.09, -110.96], 12);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© OpenStreetMap'
 }).addTo(map);
 
-// 3. Capas adicionales opcionales
-var trafico = L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", { opacity: 0.7 });
-var clima = L.tileLayer("https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=b99d75364d37e9fd2bedb86b7e42743e", { opacity: 0.5 });
+// ================= ICONOS =================
 
-// 4. Icono personalizado para Hospitales
-var hospitalIcon = L.icon({
-  iconUrl: "https://github.com/andresmelendrezm-ops/mapa-cruz-roja/blob/main/placeholder.png",
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
-  popupAnchor: [0, -30]
+// hospital semaforizado
+function iconoHospital(color){
+  return L.divIcon({
+    html:`<div style="
+      width:22px;height:22px;
+      background:${color};
+      border:3px solid white;
+      border-radius:6px;
+      box-shadow:0 0 6px rgba(0,0,0,0.6);
+    "></div>`,
+    className:"",
+    iconSize:[22,22]
+  });
+}
+
+// ambulancia
+var iconoAmbulancia = L.divIcon({
+  html:`<div style="
+    font-size:20px;
+  ">🚑</div>`,
+  className:"",
+  iconSize:[20,20]
 });
 
-// 5. Listado de Hospitales
-var hospitalesData = [
-    ["Hospital General de Especialidades", 29.08149, -111.00376],
-    ["IMSS HGZ 14", 29.09878, -111.00153],
-    ["IMSS HGZ 02", 29.10370, -110.95337],
-    ["IMSS HGZ 15", 29.08649, -110.96219],
-    ["Centro Médico del Noroeste", 29.08141, -110.95062],
-    ["Hospital CIMA", 29.06470, -110.96136],
-    ["Hospital San José", 29.12069, -110.95190],
-    ["ISSSTE Dr. Fernando Ocaranza", 29.11015, -110.95071],
-    ["SSA Hospital de la Mujer", 29.11594, -110.97256],
-    ["Hospital Militar Regional", 29.11487, -110.94862],
-    ["ISSSTESON Dr. Ignacio Chavez", 29.09679, -110.95348],
-    ["Hospital San Diego de Alcala", 29.08964, -110.95214],
-    ["Hospital Licona", 29.08144, -110.94933],
-    ["SSA Hospital Infantil", 29.11639, -110.97176]
+// ================= HOSPITALES =================
+var hospitales = [
+["HGES","disponible",29.08149,-111.00376],
+["IMSS HGZ 14","saturado",29.09878,-111.00153],
+["IMSS HGZ 02","proceso",29.10370,-110.95337],
+["Hospital CIMA","disponible",29.06470,-110.96136],
+["Hospital Infantil","disponible",29.11639,-110.97176]
 ];
 
-// Crear grupo de marcadores
-var layerHospitales = L.layerGroup();
-hospitalesData.forEach(function(h) {
-  L.marker([h[1], h[2]], {icon: hospitalIcon})
-    .bindPopup("<b>" + h[0] + "</b>")
-    .addTo(layerHospitales);
+hospitales.forEach(h=>{
+  let color =
+    h[1]=="disponible" ? "#22c55e" :
+    h[1]=="saturado" ? "#ef4444" :
+    "#facc15";
+
+  L.marker([h[2],h[3]],{icon:iconoHospital(color)})
+    .addTo(map)
+    .bindPopup(`<b>${h[0]}</b><br>Estado: ${h[1]}`);
 });
 
-// Añadir hospitales al inicio
-layerHospitales.addTo(map);
+// ================= AMBULANCIAS =================
+var ambulancias = [
+["SON-526",29.09,-110.97],
+["SON-528",29.07,-110.95],
+["SON-529",29.11,-110.98]
+];
 
-// ================= CONTROL DE CAPAS =================
-// Organizado para que el usuario pueda prender/apagar
-var capasSuperpuestas = {
-  "🏥 Mostrar Hospitales": layerHospitales,
-  "🚗 Tráfico en tiempo real": trafico,
-  "🌧️ Radar de Lluvia": clima
-};
+ambulancias.forEach(a=>{
+  L.marker([a[1],a[2]],{icon:iconoAmbulancia})
+    .addTo(map)
+    .bindPopup(`<b>Ambulancia ${a[0]}</b>`);
+});
 
-L.control.layers(null, overlayMaps, {collapsed: false}).addTo(map);
+// ================= TRÁFICO (visual) =================
+L.tileLayer(
+ "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+ {opacity:0.4}
+).addTo(map);
+
+// ================= CLIMA (requiere API) =================
+// reemplaza TU_API_KEY
+/*
+L.tileLayer(
+ "https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=TU_API_KEY",
+ {opacity:0.5}
+).addTo(map);
+*/
 
 </script>
 </body>
