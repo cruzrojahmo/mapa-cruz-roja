@@ -259,7 +259,7 @@
 
     // Cargar Hospitales del archivo original
     var hospitalLayer = L.layerGroup().addTo(map);
-    [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del Estado"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]].forEach(h => {
+    [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del Estado"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]].forEach(h => {
         L.marker([h[0], h[1]], {icon: hospitalIcon}).bindPopup(h[2]).addTo(hospitalLayer);
     });
 
