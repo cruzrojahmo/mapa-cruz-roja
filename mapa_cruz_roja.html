@@ -197,12 +197,18 @@
             <img src="crhmologo.png" alt="Logo">
         </div>
         <ul class="nav-menu">
-            <li class="nav-item active"><span class="nav-icon">📊</span> Dashboard PADSE</li>
-            <li class="nav-item"><span class="nav-icon">🚑</span> Unidades</li>
-            <li class="nav-item" onclick="toggleHospitalList()"><span class="nav-icon">🏥</span> Hospitales</li>
-            <li class="nav-item"><span class="nav-icon">📋</span> Reportes Diario</li>
-            <li class="nav-item"><span class="nav-icon">⚙️</span> Configuración</li>
-        </ul>
+    <li class="nav-item active"><span class="nav-icon">📊</span> Dashboard PADSE</li>
+    <li class="nav-item"><span class="nav-icon">🚑</span> Unidades</li>
+    
+    <li class="nav-item" onclick="toggleHospitalList()">
+        <span class="nav-icon">🏥</span> Hospitales ▾
+    </li>
+    <div id="lista-hospitales-desplegable" style="display:none; background: #cecece; padding-left: 20px;">
+        </div>
+
+    <li class="nav-item"><span class="nav-icon">📋</span> Reportes Diario</li>
+    <li class="nav-item"><span class="nav-icon">⚙️</span> Configuración</li>
+</ul>
     </div>
 
     <div class="main-content">
@@ -330,11 +336,60 @@
         map.flyTo([lat, lng], 15);
     }
 
-    // Al hacer clic en el menú lateral de Hospitales, carga el primero o abre el panel
-    function toggleHospitalList() {
-        // Ejemplo: Carga por defecto el Hospital General al pulsar el botón de la barra lateral
-        loadHospitalDetails("Hospital General de Especialidades");
+    // Función para mostrar/ocultar la lista y generarla
+function toggleHospitalList() {
+    const listaDiv = document.getElementById('lista-hospitales-desplegable');
+    
+    // Si la lista está oculta, la generamos y la mostramos
+    if (listaDiv.style.display === 'none') {
+        listaDiv.innerHTML = ''; // Limpiamos contenido previo
+        
+        // Usamos la matriz hospitalesData que ya tienes en tu código
+        hospitalesData.forEach(h => {
+            const item = document.createElement('div');
+            item.style.padding = "10px";
+            item.style.fontSize = "12px";
+            item.style.color = "#333";
+            item.style.cursor = "pointer";
+            item.style.borderBottom = "1px solid #bbb";
+            item.innerText = h[2]; // El nombre del hospital
+            
+            // Al hacer clic en un nombre, carga sus detalles desde Sheets
+            item.onclick = () => loadHospitalDetails(h[2]);
+            
+            listaDiv.appendChild(item);
+        });
+        
+        listaDiv.style.display = 'block';
+    } else {
+        listaDiv.style.display = 'none';
     }
+}
+
+// Esta función se encarga de buscar en el CSV de Google Sheets
+async function loadHospitalDetails(targetName) {
+    try {
+        const response = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv"); // Usa tu URL con comillas
+        const data = await response.text();
+        const rows = data.split('\n').slice(1);
+
+        // Buscamos la fila que coincida con el nombre exacto
+        const hospital = rows.find(row => {
+            const cols = row.split(',');
+            return cols[0].trim() === targetName.trim();
+        });
+        
+        if (hospital) {
+            const cols = hospital.split(',');
+            // Mostrar panel con: Nombre, Capacidad, Tel, Web, Lat, Lng
+            showInfoPanel(cols[0], cols[3], cols[4], cols[5], cols[1], cols[2]);
+        } else {
+            alert("No se encontró información en tiempo real para: " + targetName);
+        }
+    } catch (e) {
+        console.error("Error cargando datos de Sheets", e);
+    }
+}
 
 </script>
 
