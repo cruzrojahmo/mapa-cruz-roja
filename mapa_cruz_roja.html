@@ -6,48 +6,56 @@
     <title>PADSE - Cruz Roja Hermosillo</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --rojo-cr: #c40000;
-            --oscuro-sidebar: #1a1a1a;
-            --gris-fondo: #f4f7f6;
-            --blanco: #ffffff;
+            --rojo-cr: #FF0000;
+            --sidebar-bg: #000000;
+            --card-bg: #FFFFFF;
+            --text-main: #333333;
         }
 
-        body {
+        body, html {
             margin: 0;
+            padding: 0;
+            height: 100%;
             font-family: 'Inter', sans-serif;
-            background-color: var(--gris-fondo);
-            display: flex;
-            height: 100vh;
+            background-color: #F0F2F5;
             overflow: hidden;
         }
 
-        /* BARRA LATERAL (Inspirada en Canva) */
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* BARRA LATERAL EXACTA */
         .sidebar {
-            width: 260px;
-            background-color: var(--oscuro-sidebar);
-            color: var(--blanco);
+            width: 240px;
+            background-color: var(--sidebar-bg);
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            z-index: 2000;
+            padding: 20px 0;
+            color: white;
+            flex-shrink: 0;
         }
 
-        .logo-area {
+        .sidebar-logo {
+            padding: 0 20px 30px 20px;
             text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 20px;
         }
 
-        .logo-area h1 {
-            font-size: 1.2rem;
-            color: var(--rojo-cr);
-            margin: 0;
+        .sidebar-logo img {
+            width: 50px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-logo h1 {
+            font-size: 14px;
             letter-spacing: 2px;
+            margin: 0;
+            font-weight: 700;
         }
 
         .nav-menu {
@@ -57,183 +65,226 @@
         }
 
         .nav-item {
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.3s;
+            padding: 15px 25px;
             display: flex;
             align-items: center;
+            font-size: 14px;
+            color: #A0A0A0;
+            cursor: pointer;
+            transition: 0.3s;
         }
 
-        .nav-item:hover, .nav-item.active {
-            background-color: var(--rojo-cr);
+        .nav-item.active {
+            background-color: #1a1a1a;
+            color: white;
+            border-left: 4px solid var(--rojo-cr);
         }
 
-        /* CONTENIDO PRINCIPAL */
+        .nav-item:hover {
+            color: white;
+        }
+
+        .nav-icon {
+            margin-right: 15px;
+            font-size: 18px;
+        }
+
+        /* ÁREA PRINCIPAL */
         .main-content {
             flex-grow: 1;
             display: flex;
             flex-direction: column;
+            padding: 20px;
             position: relative;
+            gap: 20px;
         }
 
         /* HEADER SUPERIOR CENTRADO */
-        .header-top {
+        .top-header {
             position: absolute;
-            top: 20px;
+            top: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--blanco);
-            padding: 10px 40px;
+            background: white;
+            padding: 8px 30px;
             border-radius: 50px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
             z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             text-align: center;
-            border-top: 4px solid var(--rojo-cr);
-            min-width: 350px;
+            border-top: 3px solid var(--rojo-cr);
         }
 
-        .header-top h2 {
+        .top-header h2 {
             margin: 0;
-            color: var(--rojo-cr);
-            font-size: 1rem;
+            font-size: 14px;
+            font-weight: 700;
+            color: #000;
             text-transform: uppercase;
         }
 
-        .status-badge {
-            font-size: 0.8rem;
+        .top-header span {
+            font-size: 10px;
             color: #2ecc71;
             font-weight: bold;
         }
 
-        /* MAPA */
+        /* FILA DE TARJETAS (Métricas superiores) */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            z-index: 5;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* CONTENEDOR DEL MAPA */
+        .map-container {
+            flex-grow: 1;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            position: relative;
+            z-index: 1;
+        }
+
         #map {
             width: 100%;
             height: 100%;
         }
 
-        /* TARJETAS DE MÉTRICAS (Inspiradas en Canva) */
-        .stats-overlay {
+        /* FLOTANTE DE TIEMPO (RELOJ) */
+        .time-float {
             position: absolute;
             bottom: 30px;
-            left: 30px;
-            display: flex;
-            gap: 20px;
+            right: 30px;
+            background: black;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
             z-index: 1000;
+            text-align: center;
         }
 
-        .stat-card {
-            background: var(--blanco);
-            padding: 15px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border-left: 5px solid var(--rojo-cr);
-        }
-
-        .stat-card span {
-            display: block;
-            font-size: 0.75rem;
-            color: #777;
-            text-transform: uppercase;
-        }
-
-        .stat-card b {
-            font-size: 1.4rem;
-            color: #333;
-        }
+        .time-float b { font-size: 20px; display: block; }
+        .time-float span { font-size: 10px; color: #aaa; }
 
     </style>
 </head>
 <body>
 
+<div class="container">
     <div class="sidebar">
-        <div class="logo-area">
-            <h1>CRUZ ROJA</h1>
-            <small>HERMOSILLO</small>
+        <div class="sidebar-logo">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Cruz_Roja_Mexicana.svg/1200px-Cruz_Roja_Mexicana.svg.png" alt="Logo">
+            <h1>HERMOSILLO</h1>
         </div>
         <ul class="nav-menu">
-            <li class="nav-item active">🏠 Dashboard PADSE</li>
-            <li class="nav-item">🚑 Unidades Activas</li>
-            <li class="nav-item">🏥 Hospitales</li>
-            <li class="nav-item">📊 Reportes</li>
+            <li class="nav-item active"><span class="nav-icon">📊</span> Dashboard PADSE</li>
+            <li class="nav-item"><span class="nav-icon">🚑</span> Unidades</li>
+            <li class="nav-item"><span class="nav-icon">🏥</span> Hospitales</li>
+            <li class="nav-item"><span class="nav-icon">📋</span> Reportes Diario</li>
+            <li class="nav-item"><span class="nav-icon">⚙️</span> Configuración</li>
         </ul>
     </div>
 
     <div class="main-content">
-        <div class="header-top">
+        
+        <div class="top-header">
             <h2>Cruz Roja Mexicana Centro de Despacho</h2>
-            <div class="status-badge">● SISTEMA OPERATIVO ACTIVO</div>
+            <span>● SISTEMA OPERATIVO CONECTADO</span>
         </div>
 
-        <div id="map"></div>
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="label">SERVICIOS TOTALES</div>
+                <div class="value">24</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">UNIDADES ACTIVAS</div>
+                <div class="value">06</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">TIEMPO RESPUESTA</div>
+                <div class="value">07:20</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">PENDIENTES</div>
+                <div class="value" style="color: var(--rojo-cr);">02</div>
+            </div>
+        </div>
 
-        <div class="stats-overlay">
-            <div class="stat-card">
-                <span>Servicios Hoy</span>
-                <b>18</b>
-            </div>
-            <div class="stat-card">
-                <span>Unidades en Ruta</span>
-                <b>04</b>
-            </div>
-            <div class="stat-card">
-                <span>Tiempo Promedio</span>
-                <b>08 min</b>
-            </div>
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div class="time-float">
+            <span id="date-now">10 FEB 2026</span>
+            <b id="clock-now">21:50:00</b>
         </div>
     </div>
+</div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <script>
-        // Configuración del Mapa
-        var map = L.map('map', {
-            center: [29.09, -110.96],
-            zoom: 13,
-            zoomControl: false
-        });
+<script>
+    // 1. Inicializar Mapa
+    var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false });
+    
+    // Capas
+    var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    var googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
+        maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    });
 
-        // Reubicar zoom
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
+    // Icono Hospital
+    var hospitalIcon = L.icon({
+        iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684012.png",
+        iconSize: [30, 30], iconAnchor: [15, 30]
+    });
 
-        // Capa Base (OpenStreetMap)
-        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    // Cargar Hospitales del archivo original
+    var hospitalLayer = L.layerGroup().addTo(map);
+    [[29.0814, -111.0037, "Hospital General"], [29.0987, -111.0015, "IMSS 14"], [29.0647, -110.9613, "Hospital CIMA"]].forEach(h => {
+        L.marker([h[0], h[1]], {icon: hospitalIcon}).bindPopup(h[2]).addTo(hospitalLayer);
+    });
 
-        // Capa Tráfico Google Maps
-        var googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-        });
+    // Control de Capas (Quitar/Poner)
+    var overlays = {
+        "<span style='font-size:12px'>🏥 Ver Hospitales</span>": hospitalLayer,
+        "<span style='font-size:12px'>🚗 Tráfico Real (Google)</span>": googleTraffic
+    };
+    L.control.layers(null, overlays, { collapsed: false, position: 'topright' }).addTo(map);
 
-        // Icono Hospitales
-        var hospitalIcon = L.icon({
-            iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684012.png",
-            iconSize: [30, 30],
-            iconAnchor: [15, 30]
-        });
+    // Reloj en tiempo real
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock-now').innerText = now.toLocaleTimeString();
+        document.getElementById('date-now').innerText = now.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
 
-        // Marcadores Hospitales
-        var hospitales = L.layerGroup();
-        var dataH = [
-            ["H. General", 29.0814, -111.0037],
-            ["IMSS 14", 29.0987, -111.0015],
-            ["H. CIMA", 29.0647, -110.9613]
-        ];
-
-        dataH.forEach(h => {
-            L.marker([h[1], h[2]], {icon: hospitalIcon}).bindPopup(h[0]).addTo(hospitales);
-        });
-        hospitales.addTo(map);
-
-        // Control de Capas Interactivo
-        var overlays = {
-            "🏥 Ver Hospitales": hospitales,
-            "🚗 Tráfico en Tiempo Real": googleTraffic
-        };
-
-        L.control.layers(null, overlays, { collapsed: false }).addTo(map);
-
-    </script>
 </body>
 </html>
