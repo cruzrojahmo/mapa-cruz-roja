@@ -99,35 +99,6 @@
             gap: 20px;
         }
 
-        /* HEADER SUPERIOR CENTRADO */
-        .top-header {
-            position: absolute;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            padding: 8px 30px;
-            border-radius: 50px;
-            z-index: 1000;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            border-top: 3px solid var(--rojo-cr);
-        }
-
-        .top-header h2 {
-            margin: 0;
-            font-size: 14px;
-            font-weight: 700;
-            color: #000;
-            text-transform: uppercase;
-        }
-
-        .top-header span {
-            font-size: 10px;
-            color: #2ecc71;
-            font-weight: bold;
-        }
-
         /* FILA DE TARJETAS (Métricas superiores) */
         .dashboard-grid {
             display: grid;
@@ -189,6 +160,33 @@
         .time-float b { font-size: 20px; display: block; }
         .time-float span { font-size: 10px; color: #aaa; }
 
+        /* ESTILOS NUEVOS: TARJETA DE INFORMACIÓN DE HOSPITALES */
+        .info-card {
+            position: absolute;
+            top: 100px;
+            right: 20px;
+            width: 260px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            z-index: 1100;
+            display: none;
+            border-left: 6px solid var(--rojo-cr);
+        }
+        .info-card h3 { margin: 0 0 10px 0; font-size: 16px; color: #000; }
+        .info-card p { margin: 5px 0; font-size: 13px; color: #555; }
+        .status-pill {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 5px;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .bg-disponible { background: #2ecc71; }
+        .bg-saturado { background: #e74c3c; }
+
     </style>
 </head>
 <body>
@@ -201,14 +199,13 @@
         <ul class="nav-menu">
             <li class="nav-item active"><span class="nav-icon">📊</span> Dashboard PADSE</li>
             <li class="nav-item"><span class="nav-icon">🚑</span> Unidades</li>
-            <li class="nav-item"><span class="nav-icon">🏥</span> Hospitales</li>
+            <li class="nav-item" onclick="toggleHospitalList()"><span class="nav-icon">🏥</span> Hospitales</li>
             <li class="nav-item"><span class="nav-icon">📋</span> Reportes Diario</li>
             <li class="nav-item"><span class="nav-icon">⚙️</span> Configuración</li>
         </ul>
     </div>
 
     <div class="main-content">
-
         <div class="dashboard-grid">
             <div class="stat-card">
                 <div class="label">SERVICIOS TOTALES</div>
@@ -226,6 +223,14 @@
                 <div class="label">PENDIENTES</div>
                 <div class="value" style="color: var(--rojo-cr);">02</div>
             </div>
+        </div>
+
+        <div id="hospital-info-card" class="info-card">
+            <button onclick="document.getElementById('hospital-info-card').style.display='none'" style="float:right; border:none; background:none; cursor:pointer;">✕</button>
+            <h3 id="h-nombre">Nombre Hospital</h3>
+            <p><b>Capacidad:</b> <span id="h-capacidad" class="status-pill"></span></p>
+            <p><b>Teléfono:</b> <a id="h-tel" href="#"></a></p>
+            <p><b>Sitio Web:</b> <a id="h-web" target="_blank" href="#">Visitar</a></p>
         </div>
 
         <div class="map-container">
@@ -259,7 +264,11 @@
 
     // Cargar Hospitales del archivo original
     var hospitalLayer = L.layerGroup().addTo(map);
-    [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del Estado"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]].forEach(h => {
+    
+    // Matriz de datos para referencia
+    var hospitalesData = [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del Estado"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]];
+
+    hospitalesData.forEach(h => {
         L.marker([h[0], h[1]], {icon: hospitalIcon}).bindPopup(h[2]).addTo(hospitalLayer);
     });
 
@@ -278,6 +287,55 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
+
+    // ==========================================
+    // LÓGICA DE GOOGLE SHEETS E INTERACTIVIDAD
+    // ==========================================
+
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv'; // <--- PEGA AQUÍ TU URL CSV DE GOOGLE SHEETS
+
+    async function loadHospitalDetails(targetName) {
+        try {
+            const response = await fetch(SHEET_CSV_URL);
+            const data = await response.text();
+            const rows = data.split('\n').slice(1); // Ignorar cabecera
+
+            const hospital = rows.find(row => row.includes(targetName));
+            
+            if (hospital) {
+                const cols = hospital.split(',');
+                // Estructura esperada: Nombre, Lat, Lng, Capacidad, Telefono, Web
+                showInfoPanel(cols[0], cols[3], cols[4], cols[5], cols[1], cols[2]);
+            } else {
+                alert("Información no disponible en tiempo real para este hospital.");
+            }
+        } catch (e) {
+            console.error("Error cargando datos de Sheets", e);
+        }
+    }
+
+    function showInfoPanel(nombre, capacidad, tel, web, lat, lng) {
+        const card = document.getElementById('hospital-info-card');
+        document.getElementById('h-nombre').innerText = nombre;
+        
+        const capEl = document.getElementById('h-capacidad');
+        capEl.innerText = capacidad;
+        capEl.className = 'status-pill ' + (capacidad.toLowerCase().includes('disponible') ? 'bg-disponible' : 'bg-saturado');
+
+        document.getElementById('h-tel').innerText = tel;
+        document.getElementById('h-tel').href = "tel:" + tel;
+        document.getElementById('h-web').href = web;
+
+        card.style.display = 'block';
+        map.flyTo([lat, lng], 15);
+    }
+
+    // Al hacer clic en el menú lateral de Hospitales, carga el primero o abre el panel
+    function toggleHospitalList() {
+        // Ejemplo: Carga por defecto el Hospital General al pulsar el botón de la barra lateral
+        loadHospitalDetails("Hospital General de Especialidades");
+    }
+
 </script>
 
 </body>
