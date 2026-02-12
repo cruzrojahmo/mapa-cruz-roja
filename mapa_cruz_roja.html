@@ -24,7 +24,6 @@
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; background-color: var(--bg-main); overflow: hidden; transition: background 0.3s; }
         .container { display: flex; height: 100vh; }
         
-        /* Sidebar */
         .sidebar { width: 240px; background-color: #DEDEDE !important; display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; z-index: 10; }
         .sidebar-logo { padding: 0 20px 20px 20px; text-align: center; }
         .sidebar-logo img { width: 160px; margin-bottom: 10px; }
@@ -32,43 +31,18 @@
         .nav-item { padding: 15px 25px; display: flex; align-items: center; font-size: 14px; color: #555 !important; cursor: pointer; transition: 0.3s; }
         .nav-item.active { background-color: #1a1a1a; color: white !important; border-left: 4px solid var(--rojo-cr); }
 
-        /* BUSCADOR */
         .search-container { padding: 10px 15px; position: relative; }
         .search-input { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #bbb; font-size: 12px; outline: none; box-sizing: border-box; }
         .search-results { background: white; position: absolute; width: 210px; z-index: 2000; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-height: 150px; overflow-y: auto; border-radius: 0 0 8px 8px; }
         .search-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; color: #333; }
         .search-item:hover { background: #f0f0f0; }
 
-        /* MARQUEE (CINTILLO VIAL) */
-        .marquee-wrapper {
-            flex-grow: 1;
-            margin: 0 20px;
-            background: #fffafa;
-            border-radius: 10px;
-            overflow: hidden;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            border: 1px solid #ffdada;
-            height: 40px;
-        }
-        .marquee-text {
-            display: inline-block;
-            padding-left: 100%;
-            animation: marquee-scroll 30s linear infinite;
-            color: var(--rojo-cr);
-            font-weight: 700;
-            font-size: 13px;
-            text-transform: uppercase;
-        }
-        @keyframes marquee-scroll {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(-100%, 0); }
-        }
+        .marquee-wrapper { flex-grow: 1; margin: 0 20px; background: #fffafa; border-radius: 10px; overflow: hidden; white-space: nowrap; display: flex; align-items: center; border: 1px solid #ffdada; height: 40px; }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: marquee-scroll 30s linear infinite; color: var(--rojo-cr); font-weight: 700; font-size: 13px; text-transform: uppercase; }
+        @keyframes marquee-scroll { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
         .etiqueta-riesgo { background: rgba(0, 0, 0, 0.7); border: 1px solid var(--rojo-cr); font-weight: bold; color: white; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
 
-        /* Unidades */
         .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
         .dot-turno { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
         .dot-fuera { background: #ff0000; box-shadow: 0 0 5px #ff0000; }
@@ -76,7 +50,6 @@
         .filtro-unidades { display: flex; gap: 5px; padding: 10px; background: #cecece; border-bottom: 1px solid #bbb; }
         .btn-filtro { border: none; padding: 4px 8px; border-radius: 4px; font-size: 9px; cursor: pointer; font-weight: bold; }
 
-        /* Main Content */
         .main-content { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; position: relative; gap: 15px; }
         .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); color: var(--text-color); transition: 0.3s; }
         .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; z-index: 5; }
@@ -174,19 +147,23 @@
     const UNIDADES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4_Q6g0WAkAHw8t7ZONnY_xppTfxr0Gh736C9IwPgDIM4P2-zDsiPau4HGtACULSg13LlAPuZgbiR8/pub?output=csv';
     const ZONAS_RIESGO_URL = 'https://raw.githubusercontent.com/andresmelendrezm-ops/mapa-cruz-roja/refs/heads/main/zonas_riesgo.geojson';
 
+    // Capas Base
     const layerClaro = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
     const layerOscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
-    var googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] });
+    const googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] });
     
-    var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false, layers: [layerClaro] });
-    googleTraffic.addTo(map);
+    // Capas Meteorológicas (Nuevas)
+    const capaNubes = L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7 });
+    const capaLluvia = L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7 });
+
+    var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false, layers: [layerClaro, googleTraffic] });
 
     var hospitalLayer = L.layerGroup().addTo(map);
     var riesgoLayer = L.layerGroup();
     var basesLayer = L.layerGroup().addTo(map);
 
-    // --- HOSPITALES DATA & ICONS ---
-    var hospitalesData = [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del Estado"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]];
+    // --- HOSPITALES ---
+    var hospitalesData = [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del State"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]];
     const hospIcon = L.icon({ iconUrl: "placeholder.png", iconSize: [30, 30] });
     hospitalesData.forEach(h => { L.marker([h[0], h[1]], {icon: hospIcon}).bindPopup(h[2]).addTo(hospitalLayer); });
 
@@ -195,9 +172,16 @@
     const baseIcon = L.icon({ iconUrl: 'bases.png', iconSize: [30, 30], iconAnchor: [15, 30] });
     basesData.forEach(b => L.marker(b.coords, {icon: baseIcon}).bindPopup(`<b>${b.nombre}</b>`).addTo(basesLayer));
 
-    L.control.layers(null, { "🏥 Hospitales": hospitalLayer, "🚑 Bases CR": basesLayer, "🚗 Tráfico Real": googleTraffic, "⚠️ Riesgo": riesgoLayer }, { collapsed: false, position: 'topright' }).addTo(map);
+    // --- CONTROL DE CAPAS (Actualizado con Clima) ---
+    L.control.layers(null, { 
+        "🏥 Hospitales": hospitalLayer, 
+        "🚑 Bases CR": basesLayer, 
+        "🚗 Tráfico Real": googleTraffic, 
+        "⚠️ Riesgo": riesgoLayer,
+        "☁️ Nubes (Satélite)": capaNubes,
+        "🌧️ Precipitación": capaLluvia
+    }, { collapsed: false, position: 'topright' }).addTo(map);
 
-    // --- CINTILLO VIAL ---
     async function procesarReportesViales() {
         const marquee = document.getElementById('marquee-content');
         const palabrasClave = ["CHOQUE", "ACCIDENTE", "CIERRE", "CERRADO", "OBRAS", "REPARACION", "RESTRICCION", "PRECAUCION", "EVITE LA ZONA"];
@@ -214,7 +198,6 @@
         } catch(e) { marquee.innerText = "⚠️ MONITOREO VIAL ACTIVO | ANALIZANDO FLUJO VIAL"; }
     }
 
-    // --- ZONAS DE RIESGO ---
     async function cargarZonasRiesgo() {
         if(riesgoLayer.getLayers().length > 0) { riesgoLayer.clearLayers(); map.removeLayer(riesgoLayer); return; }
         try {
@@ -231,7 +214,6 @@
         } catch (e) { console.error(e); }
     }
 
-    // --- BUSCADOR ---
     async function buscarDireccion() {
         const query = document.getElementById('address-search').value;
         if (query.length < 4) return;
@@ -253,7 +235,6 @@
         } catch(e) {}
     }
 
-    // --- HOSPITALES ---
     async function toggleHospitalList() {
         const d = document.getElementById('lista-hospitales-desplegable');
         if (d.style.display === 'none') {
@@ -279,7 +260,6 @@
         } else d.style.display = 'none';
     }
 
-    // --- DASHBOARD & OTROS ---
     function actualizarDashboard() {
         const ahora = new Date(); document.getElementById('clock-now').innerText = ahora.toLocaleTimeString();
         document.getElementById('date-now').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
@@ -296,13 +276,11 @@
             const temp = Math.round(d.main.temp);
             const desc = d.weather[0].description.toUpperCase();
             const id = d.weather[0].id;
-            const wind = d.wind.speed * 3.6; // Convertir a km/h
+            const wind = d.wind.speed * 3.6;
 
-            // Mostrar Clima Actual
             document.getElementById('clima-info').innerText = temp + "°C";
             document.getElementById('clima-desc').innerText = desc;
 
-            // Lógica de Alertas Meteorológicas Corregida
             const alertStatus = document.getElementById('alerta-status');
             const alertDesc = document.getElementById('alerta-desc');
 
@@ -319,16 +297,11 @@
                 alertStatus.style.color = "#f1c40f";
                 alertDesc.innerText = "PRECAUCIÓN OBJETOS CAÍDOS";
             } else {
-                // RESTAURACIÓN: Condiciones Normales
                 alertStatus.innerText = "SIN ALERTAS";
                 alertStatus.style.color = "#2ecc71";
                 alertDesc.innerText = "OPERACIÓN NORMAL";
             }
-
-        } catch(e) {
-            document.getElementById('alerta-status').innerText = "ERROR SYNC";
-            document.getElementById('alerta-desc').innerText = "VERIFICAR CONEXIÓN";
-        }
+        } catch(e) {}
     }
 
     let unidadesCache = [];
@@ -358,15 +331,8 @@
         else { map.removeLayer(layerOscuro); map.addLayer(layerClaro); document.getElementById('btn-dark').innerHTML = "🌙 Modo Oscuro"; }
     }
 
-    // Inicialización
-    actualizarDashboard(); 
-    obtenerClima(); 
-    procesarReportesViales();
-    
-    // Timers
-    setInterval(actualizarDashboard, 1000); 
-    setInterval(obtenerClima, 600000); // Cada 10 minutos
-    setInterval(procesarReportesViales, 180000); // Cada 3 minutos
+    actualizarDashboard(); obtenerClima(); procesarReportesViales();
+    setInterval(actualizarDashboard, 1000); setInterval(obtenerClima, 600000); setInterval(procesarReportesViales, 180000);
 </script>
 </body>
 </html>
