@@ -193,7 +193,7 @@
             const xml = new DOMParser().parseFromString(json.contents, "text/xml");
             const items = xml.querySelectorAll("item");
             let alertas = [];
-            items.forEach((item, i) => { if(i < 8) { let txt = item.querySelector("title").textContent.toUpperCase(); if(palabrasClave.some(p => txt.includes(p))) alertas.push("🚨 " + txt.replace(/(HTTPS?|FTP):\/\/[\N\S]+/g, '')); } });
+            items.forEach((item, i) => { if(i < 8) { let txt = item.querySelector("title").textContent.toUpperCase(); if(palabrasClave.some(p => txt.includes(p))) alertas.push("🚨 " + txt.replace(/(HTTPS?|FTP):\/\/[\S]+/g, '')); } });
             marquee.innerText = alertas.length > 0 ? alertas.join(" | ") + " | " + alertas[0] : "✅ VÍAS SIN REPORTES CRÍTICOS | OPERACIÓN NORMAL";
         } catch(e) { marquee.innerText = "⚠️ MONITOREO VIAL ACTIVO | ANALIZANDO FLUJO VIAL"; }
     }
