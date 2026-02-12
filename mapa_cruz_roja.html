@@ -19,6 +19,12 @@
         .nav-item { padding: 15px 25px; display: flex; align-items: center; font-size: 14px; color: #555; cursor: pointer; transition: 0.3s; }
         .nav-item.active { background-color: #1a1a1a; color: white; border-left: 4px solid var(--rojo-cr); }
 
+        /* Estilos de Unidades en Sidebar */
+        .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+        .dot-disponible { background: #2ecc71; }
+        .dot-servicio { background: #e67e22; }
+        .dot-fuera { background: #95a5a6; }
+
         /* Main Content */
         .main-content { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; position: relative; gap: 15px; }
         
@@ -44,7 +50,7 @@
         .map-container { flex-grow: 1; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; }
         #map { width: 100%; height: 100%; }
 
-        /* Popups e Info */
+        /* Info Card */
         .info-card { position: absolute; top: 140px; right: 20px; width: 260px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 1100; display: none; border-left: 6px solid var(--rojo-cr); }
         .status-pill { display: inline-block; padding: 3px 8px; border-radius: 5px; color: white; font-size: 11px; font-weight: bold; }
         .bg-disponible { background: #2ecc71; }
@@ -58,9 +64,13 @@
         <div class="sidebar-logo"><img src="crhmologo.png" alt="Logo"></div>
         <ul class="nav-menu">
             <li class="nav-item active"><span class="nav-icon">📊</span> Dashboard</li>
-            <li class="nav-item"><span class="nav-icon">🚑</span> Unidades</li>
+            
+            <li class="nav-item" onclick="toggleUnidadesList()"><span class="nav-icon">🚑</span> Unidades ▾</li>
+            <div id="lista-unidades-desplegable" style="display:none; background: #cecece; padding-left: 10px; max-height: 200px; overflow-y: auto;"></div>
+            
             <li class="nav-item" onclick="toggleHospitalList()"><span class="nav-icon">🏥</span> Hospitales ▾</li>
             <div id="lista-hospitales-desplegable" style="display:none; background: #cecece; padding-left: 10px;"></div>
+            
             <li class="nav-item"><span class="nav-icon">📋</span> Reportes</li>
         </ul>
     </div>
@@ -108,7 +118,13 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // 1. CONFIGURACIÓN INICIAL DEL MAPA
+    // --- CONFIGURACIÓN DE AUDIO ---
+    const audioAlerta = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+    const audioTurno = new Audio('https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg');
+    let ultimaAlertaStr = "SIN ALERTAS";
+    let ultimoTurnoID = "";
+
+    // --- CONFIGURACIÓN MAPA ---
     var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false });
     var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     var googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
@@ -121,7 +137,6 @@
     var hospitalIcon = L.icon({ iconUrl: "placeholder.png", iconSize: [30, 30], iconAnchor: [15, 30] });
 
     var hospitalesData = [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del Estado"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San Diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]];
-
     hospitalesData.forEach(h => { L.marker([h[0], h[1]], {icon: hospitalIcon}).bindPopup(h[2]).addTo(hospitalLayer); });
 
     var overlays = {
@@ -131,30 +146,37 @@
     };
     L.control.layers(null, overlays, { collapsed: false, position: 'topright' }).addTo(map);
 
-    // 2. LÓGICA DE TIEMPO (RELOJ Y TURNOS)
+    // --- LÓGICA DE TIEMPO Y SONIDO DE TURNO ---
     function updateClockAndShifts() {
         const ahora = new Date();
-        
-        // Reloj Superior
         document.getElementById('clock-now').innerText = ahora.toLocaleTimeString();
         document.getElementById('date-now').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
 
-        // Cálculo de Relevos
         let horas = ahora.getHours();
         let proximoRelevo = new Date();
-        let nombreTurno = "";
+        let turnoActualID = "";
+        let nombreTurnoStr = "";
 
         if (horas >= 7 && horas < 15) {
+            turnoActualID = "MATUTINO";
             proximoRelevo.setHours(15, 0, 0, 0);
-            nombreTurno = "Para Turno Vespertino";
+            nombreTurnoStr = "Para Turno Vespertino";
         } else if (horas >= 15 && horas < 23) {
+            turnoActualID = "VESPERTINO";
             proximoRelevo.setHours(23, 0, 0, 0);
-            nombreTurno = "Para Turno Nocturno";
+            nombreTurnoStr = "Para Turno Nocturno";
         } else {
+            turnoActualID = "NOCTURNO";
             if (horas >= 23) proximoRelevo.setDate(proximoRelevo.getDate() + 1);
             proximoRelevo.setHours(7, 0, 0, 0);
-            nombreTurno = "Para Turno Matutino";
+            nombreTurnoStr = "Para Turno Matutino";
         }
+
+        // Sonar campana si cambia el turno
+        if (ultimoTurnoID !== "" && ultimoTurnoID !== turnoActualID) {
+            audioTurno.play();
+        }
+        ultimoTurnoID = turnoActualID;
 
         let dif = proximoRelevo - ahora;
         let h = Math.floor(dif / 3600000);
@@ -162,21 +184,18 @@
         let s = Math.floor((dif % 60000) / 1000);
 
         document.getElementById('relevo-timer').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-        document.getElementById('relevo-nombre').innerText = nombreTurno;
+        document.getElementById('relevo-nombre').innerText = nombreTurnoStr;
     }
     setInterval(updateClockAndShifts, 1000);
     updateClockAndShifts();
 
-    // 3. LÓGICA DE CLIMA Y ALERTAS
+    // --- LÓGICA CLIMA Y SONIDO ALERTA ---
     async function obtenerClima() {
         try {
             const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=29.09&lon=-110.96&units=metric&lang=es&appid=${API_KEY}`);
             const datos = await resp.json();
             const temp = Math.round(datos.main.temp);
             const condicion = datos.weather[0].main.toLowerCase();
-
-            document.getElementById('clima-info').innerText = temp + "°C";
-            document.getElementById('clima-desc').innerText = datos.weather[0].description;
 
             let alertaT = "SIN ALERTAS";
             let alertaD = "Condiciones Normales";
@@ -186,16 +205,57 @@
             if (condicion.includes("rain")) { alertaT = "🌧️ AVISO LLUVIA"; alertaD = "Precaución: Suelo Mojado"; colorA = "#3498db"; }
             if (condicion.includes("thunderstorm")) { alertaT = "⚡ TORMENTA"; alertaD = "Alerta de Inundación"; colorA = "#f1c40f"; }
 
+            // Sonar alerta si hay cambio climático crítico
+            if (alertaT !== ultimaAlertaStr && alertaT !== "SIN ALERTAS") {
+                audioAlerta.play();
+            }
+            ultimaAlertaStr = alertaT;
+
             const el = document.getElementById('alerta-status');
             el.innerText = alertaT;
             el.style.color = colorA;
             document.getElementById('alerta-detalle').innerText = alertaD;
+            document.getElementById('clima-info').innerText = temp + "°C";
+            document.getElementById('clima-desc').innerText = datos.weather[0].description;
         } catch (e) { console.error("Error clima:", e); }
     }
     obtenerClima();
     setInterval(obtenerClima, 600000);
 
-    // 4. LÓGICA DE HOSPITALES (GOOGLE SHEETS)
+    // --- LÓGICA DE UNIDADES (GOOGLE SHEETS) ---
+    // REEMPLAZA ESTE LINK POR TU CSV DE UNIDADES
+    const UNIDADES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4_Q6g0WAkAHw8t7ZONnY_xppTfxr0Gh736C9IwPgDIM4P2-zDsiPau4HGtACULSg13LlAPuZgbiR8/pub?output=csv';
+
+    async function toggleUnidadesList() {
+        const listaDiv = document.getElementById('lista-unidades-desplegable');
+        if (listaDiv.style.display === 'none') {
+            listaDiv.style.display = 'block';
+            listaDiv.innerHTML = '<div style="padding:10px; font-size:11px;">Cargando unidades...</div>';
+            try {
+                const response = await fetch(UNIDADES_CSV_URL);
+                const data = await response.text();
+                const rows = data.split(/\r?\n/).filter(r => r.trim() !== "").slice(1);
+                listaDiv.innerHTML = '';
+                rows.forEach(row => {
+                    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    const nombre = cols[0].replace(/["']/g, "");
+                    const estado = cols[1].replace(/["']/g, "").toLowerCase();
+                    
+                    const item = document.createElement('div');
+                    item.style = "padding: 8px; font-size: 11px; border-bottom: 1px solid #bbb; display: flex; align-items: center;";
+                    
+                    let dotClass = "dot-fuera";
+                    if(estado.includes("disponible")) dotClass = "dot-disponible";
+                    if(estado.includes("servicio") || estado.includes("ocupada")) dotClass = "dot-servicio";
+
+                    item.innerHTML = `<span class="status-dot ${dotClass}"></span> ${nombre} <span style="margin-left:auto; font-size:9px; color:#666">${estado.toUpperCase()}</span>`;
+                    listaDiv.appendChild(item);
+                });
+            } catch (e) { listaDiv.innerHTML = '<div style="padding:10px; color:red">Error de conexión</div>'; }
+        } else { listaDiv.style.display = 'none'; }
+    }
+
+    // --- LÓGICA DE HOSPITALES (MANTIENE LA ORIGINAL) ---
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv';
 
     async function loadHospitalDetails(targetName) {
