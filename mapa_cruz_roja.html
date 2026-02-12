@@ -37,7 +37,7 @@
         .map-container { flex-grow: 1; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; }
         #map { width: 100%; height: 100%; }
 
-        /* Info Card Hospitales */
+        /* Info Cards */
         .info-card { position: absolute; top: 140px; right: 20px; width: 260px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 1100; display: none; border-left: 6px solid var(--rojo-cr); }
         .status-pill { display: inline-block; padding: 3px 8px; border-radius: 5px; color: white; font-size: 11px; font-weight: bold; }
         .bg-disponible { background: #2ecc71; }
@@ -100,6 +100,14 @@
             <p style="font-size:11px;"><b>Tel:</b> <a id="h-tel" href="#"></a></p>
         </div>
 
+        <div id="unit-info-card" class="info-card" style="border-left-color: #1a1a1a;">
+            <button onclick="document.getElementById('unit-info-card').style.display='none'" style="float:right; border:none; background:none; cursor:pointer;">✕</button>
+            <h3 id="u-nombre" style="margin-top:0; font-size:14px; color:var(--rojo-cr);">Unidad</h3>
+            <p style="font-size:11px;"><b>Operador:</b> <br><span id="u-operador">---</span></p>
+            <p style="font-size:11px;"><b>Jefe de Servicio:</b> <br><span id="u-jefe">---</span></p>
+            <p style="font-size:11px;"><b>Auxiliar(es):</b> <br><span id="u-auxiliar">---</span></p>
+        </div>
+
         <div class="map-container"><div id="map"></div></div>
     </div>
 </div>
@@ -156,6 +164,7 @@
                 document.getElementById('h-tel').innerText = c[4];
                 document.getElementById('h-tel').href = "tel:" + c[4];
                 document.getElementById('hospital-info-card').style.display = 'block';
+                document.getElementById('unit-info-card').style.display = 'none';
                 map.flyTo([parseFloat(c[1]), parseFloat(c[2])], 15);
             }
         }
@@ -177,7 +186,13 @@
         const rows = data.split(/\r?\n/).filter(r => r.trim() !== "").slice(1);
         unidadesCache = rows.map(r => {
             const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            return { nombre: c[0].replace(/["']/g, ""), estado: c[1].replace(/["']/g, "").trim() };
+            return { 
+                nombre: c[0].replace(/["']/g, ""), 
+                estado: c[1].replace(/["']/g, "").trim(),
+                operador: c[2] ? c[2].replace(/["']/g, "") : "No asignado",
+                jefe: c[3] ? c[3].replace(/["']/g, "") : "No asignado",
+                auxiliar: c[4] ? c[4].replace(/["']/g, "") : "N/A"
+            };
         });
         renderUnidades(unidadesCache);
     }
@@ -187,9 +202,20 @@
         l.innerHTML = '';
         unidades.forEach(u => {
             const item = document.createElement('div');
-            item.style = "padding: 8px 15px; font-size: 11px; border-bottom: 1px solid #bbb; display: flex; align-items: center; background: #e0e0e0;";
+            item.style = "padding: 8px 15px; font-size: 11px; border-bottom: 1px solid #bbb; display: flex; align-items: center; background: #e0e0e0; cursor: pointer;";
             let dot = u.estado === "En turno" ? "dot-turno" : u.estado === "Servicio Especial" ? "dot-especial" : "dot-fuera";
             item.innerHTML = `<span class="status-dot ${dot}"></span> <b>${u.nombre}</b> <span style="margin-left:auto; font-size:9px; color:#666">${u.estado}</span>`;
+            
+            // Evento para mostrar tripulación
+            item.onclick = () => {
+                document.getElementById('u-nombre').innerText = u.nombre;
+                document.getElementById('u-operador').innerText = u.operador;
+                document.getElementById('u-jefe').innerText = u.jefe;
+                document.getElementById('u-auxiliar').innerText = u.auxiliar;
+                document.getElementById('unit-info-card').style.display = 'block';
+                document.getElementById('hospital-info-card').style.display = 'none';
+            };
+            
             l.appendChild(item);
         });
     }
@@ -205,7 +231,6 @@
         document.getElementById('clock-now').innerText = ahora.toLocaleTimeString();
         document.getElementById('date-now').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
         
-        // Cálculo Relevo (07:00, 15:00, 23:00)
         let horas = ahora.getHours();
         let proximo = new Date();
         if (horas >= 7 && horas < 15) proximo.setHours(15,0,0,0);
@@ -240,11 +265,10 @@
         } catch (e) { console.error("Error clima", e); }
     }
 
-    // Inicializar y Ciclos
     actualizarDashboard();
     obtenerClima();
     setInterval(actualizarDashboard, 1000);
-    setInterval(obtenerClima, 600000); // Cada 10 min
+    setInterval(obtenerClima, 600000); 
 </script>
 </body>
 </html>
