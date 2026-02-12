@@ -132,8 +132,8 @@
         <div class="dashboard-grid">
             <div class="stat-card">
                 <div style="font-size: 11px; opacity: 0.7; font-weight:600;">ALERTAS METEOROLÓGICAS</div>
-                <div id="alerta-status" style="font-size: 18px; font-weight:700; color: #2ecc71;">CARGANDO...</div>
-                <div id="alerta-desc" style="font-size: 10px; opacity: 0.6; margin-top:5px;">Sincronizando...</div>
+                <div id="alerta-status" style="font-size: 18px; font-weight:700; color: #2ecc71;">SIN ALERTAS</div>
+                <div id="alerta-desc" style="font-size: 10px; opacity: 0.6; margin-top:5px;">OPERACIÓN NORMAL</div>
             </div>
             <div class="stat-card">
                 <div style="font-size: 11px; opacity: 0.7; font-weight:600;">CLIMA HERMOSILLO</div>
@@ -214,7 +214,7 @@
         } catch(e) { marquee.innerText = "⚠️ MONITOREO VIAL ACTIVO | ANALIZANDO FLUJO VIAL"; }
     }
 
-    // --- ZONAS DE RIESGO (RESTAURADO) ---
+    // --- ZONAS DE RIESGO ---
     async function cargarZonasRiesgo() {
         if(riesgoLayer.getLayers().length > 0) { riesgoLayer.clearLayers(); map.removeLayer(riesgoLayer); return; }
         try {
@@ -253,7 +253,7 @@
         } catch(e) {}
     }
 
-    // --- HOSPITALES (RESTAURADO) ---
+    // --- HOSPITALES ---
     async function toggleHospitalList() {
         const d = document.getElementById('lista-hospitales-desplegable');
         if (d.style.display === 'none') {
@@ -293,11 +293,42 @@
         try {
             const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=29.09&lon=-110.96&units=metric&lang=es&appid=${API_KEY}`);
             const d = await resp.json();
-            document.getElementById('clima-info').innerText = Math.round(d.main.temp) + "°C";
-            document.getElementById('clima-desc').innerText = d.weather[0].description.toUpperCase();
-            document.getElementById('alerta-status').innerText = d.main.temp > 38 ? "CALOR EXTREMO" : "SIN ALERTAS";
-            document.getElementById('alerta-status').style.color = d.main.temp > 38 ? "#e67e22" : "#2ecc71";
-        } catch(e) {}
+            const temp = Math.round(d.main.temp);
+            const desc = d.weather[0].description.toUpperCase();
+            const id = d.weather[0].id;
+            const wind = d.wind.speed * 3.6; // Convertir a km/h
+
+            // Mostrar Clima Actual
+            document.getElementById('clima-info').innerText = temp + "°C";
+            document.getElementById('clima-desc').innerText = desc;
+
+            // Lógica de Alertas Meteorológicas Corregida
+            const alertStatus = document.getElementById('alerta-status');
+            const alertDesc = document.getElementById('alerta-desc');
+
+            if (temp >= 40) {
+                alertStatus.innerText = "CALOR EXTREMO";
+                alertStatus.style.color = "#e67e22";
+                alertDesc.innerText = "RIESGO DE GOLPE DE CALOR";
+            } else if (id >= 200 && id < 600) {
+                alertStatus.innerText = "LLUVIA / TORMENTA";
+                alertStatus.style.color = "#3498db";
+                alertDesc.innerText = "REDUCIR VELOCIDAD - PISO MOJADO";
+            } else if (wind > 40) {
+                alertStatus.innerText = "VIENTOS FUERTES";
+                alertStatus.style.color = "#f1c40f";
+                alertDesc.innerText = "PRECAUCIÓN OBJETOS CAÍDOS";
+            } else {
+                // RESTAURACIÓN: Condiciones Normales
+                alertStatus.innerText = "SIN ALERTAS";
+                alertStatus.style.color = "#2ecc71";
+                alertDesc.innerText = "OPERACIÓN NORMAL";
+            }
+
+        } catch(e) {
+            document.getElementById('alerta-status').innerText = "ERROR SYNC";
+            document.getElementById('alerta-desc').innerText = "VERIFICAR CONEXIÓN";
+        }
     }
 
     let unidadesCache = [];
@@ -327,8 +358,15 @@
         else { map.removeLayer(layerOscuro); map.addLayer(layerClaro); document.getElementById('btn-dark').innerHTML = "🌙 Modo Oscuro"; }
     }
 
-    actualizarDashboard(); obtenerClima(); procesarReportesViales();
-    setInterval(actualizarDashboard, 1000); setInterval(obtenerClima, 600000); setInterval(procesarReportesViales, 180000);
+    // Inicialización
+    actualizarDashboard(); 
+    obtenerClima(); 
+    procesarReportesViales();
+    
+    // Timers
+    setInterval(actualizarDashboard, 1000); 
+    setInterval(obtenerClima, 600000); // Cada 10 minutos
+    setInterval(procesarReportesViales, 180000); // Cada 3 minutos
 </script>
 </body>
 </html>
