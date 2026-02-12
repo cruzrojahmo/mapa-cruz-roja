@@ -10,25 +10,45 @@
         :root { --rojo-cr: #FF0000; --sidebar-bg: #DEDEDE; }
         body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; background-color: #F0F2F5; overflow: hidden; }
         .container { display: flex; height: 100vh; }
+        
+        /* Sidebar */
         .sidebar { width: 240px; background-color: var(--sidebar-bg); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; }
         .sidebar-logo { padding: 0 20px 20px 20px; text-align: center; }
         .sidebar-logo img { width: 160px; margin-bottom: 10px; }
         .nav-menu { list-style: none; padding: 0; margin: 0; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; font-size: 14px; color: #555; cursor: pointer; transition: 0.3s; }
         .nav-item.active { background-color: #1a1a1a; color: white; border-left: 4px solid var(--rojo-cr); }
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; position: relative; gap: 20px; }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; z-index: 5; }
+
+        /* Main Content */
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; position: relative; gap: 15px; }
+        
+        /* Barra Superior */
+        .top-bar { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: white; padding: 12px 25px; border-radius: 15px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); 
+        }
+        .top-bar .system-title { font-weight: 700; color: #444; letter-spacing: 1px; font-size: 14px; }
+        .top-bar .time-info { text-align: right; }
+        .top-bar .time-info b { font-size: 20px; display: block; color: var(--rojo-cr); line-height: 1; }
+        .top-bar .time-info span { font-size: 11px; font-weight: 600; color: #777; text-transform: uppercase; }
+
+        /* Dashboard Cards */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; z-index: 5; }
         .stat-card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        .stat-card .label { font-size: 12px; color: #777; margin-bottom: 5px; }
-        .stat-card .value { font-size: 24px; font-weight: 700; color: #333; }
-        .map-container { flex-grow: 1; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; z-index: 1; }
+        .stat-card .label { font-size: 11px; color: #777; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
+        .stat-card .value { font-size: 22px; font-weight: 700; color: #333; }
+        .stat-card .sub-label { font-size: 10px; color: #999; margin-top: 4px; text-transform: uppercase; }
+
+        /* Map */
+        .map-container { flex-grow: 1; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; }
         #map { width: 100%; height: 100%; }
-        .info-card { position: absolute; top: 100px; right: 20px; width: 260px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 1100; display: none; border-left: 6px solid var(--rojo-cr); }
+
+        /* Popups e Info */
+        .info-card { position: absolute; top: 140px; right: 20px; width: 260px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 1100; display: none; border-left: 6px solid var(--rojo-cr); }
         .status-pill { display: inline-block; padding: 3px 8px; border-radius: 5px; color: white; font-size: 11px; font-weight: bold; }
         .bg-disponible { background: #2ecc71; }
         .bg-saturado { background: #e74c3c; }
-        .time-float { position: absolute; bottom: 30px; right: 30px; background: black; color: white; padding: 10px 20px; border-radius: 10px; z-index: 1000; text-align: center; }
-        .time-float b { font-size: 20px; display: block; }
     </style>
 </head>
 <body>
@@ -44,50 +64,66 @@
             <li class="nav-item"><span class="nav-icon">📋</span> Reportes</li>
         </ul>
     </div>
+
     <div class="main-content">
-        <div class="dashboard-grid">
-            <div class="stat-card"><div class="label">UNIDADES ACTIVAS</div><div class="value">05</div></div>
-            <div class="stat-card"><div class="label">TIEMPO RESPUESTA</div><div class="value">07:20</div></div>
-            <div class="stat-card"><div class="label">PENDIENTES</div><div class="value" style="color: var(--rojo-cr);">02</div></div>
-            <div class="stat-card">
-                <div class="label">CLIMA HERMOSILLO</div>
-                <div id="clima-info" class="value">--°C</div>
-                <div id="clima-desc" style="font-size: 10px; color: #777; text-transform: uppercase;">Cargando...</div>
+        <div class="top-bar">
+            <div class="system-title">SISTEMA PADSE | CRUZ ROJA MEXICANA</div>
+            <div class="time-info">
+                <span id="date-now">-- --- ----</span>
+                <b id="clock-now">00:00:00</b>
             </div>
         </div>
+
+        <div class="dashboard-grid">
+            <div class="stat-card">
+                <div class="label">Alertas Meteorológicas</div>
+                <div id="alerta-status" class="value" style="font-size: 18px;">SIN ALERTAS</div>
+                <div id="alerta-detalle" class="sub-label">Condiciones Normales</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="label">Clima Hermosillo</div>
+                <div id="clima-info" class="value">--°C</div>
+                <div id="clima-desc" class="sub-label">Cargando datos...</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="label">Próximo Relevo</div>
+                <div id="relevo-timer" class="value">--:--:--</div>
+                <div id="relevo-nombre" class="sub-label">Calculando turno...</div>
+            </div>
+        </div>
+
         <div id="hospital-info-card" class="info-card">
             <button onclick="document.getElementById('hospital-info-card').style.display='none'" style="float:right; border:none; background:none; cursor:pointer;">✕</button>
-            <h3 id="h-nombre">Hospital</h3>
+            <h3 id="h-nombre" style="margin-top:0">Hospital</h3>
             <p><b>Capacidad:</b> <span id="h-capacidad" class="status-pill"></span></p>
             <p><b>Tel:</b> <a id="h-tel" href="#"></a></p>
             <p><b>Web:</b> <a id="h-web" target="_blank" href="#">Visitar</a></p>
         </div>
+
         <div class="map-container"><div id="map"></div></div>
-        <div class="time-float"><span id="date-now">-- --- ----</span><b id="clock-now">00:00:00</b></div>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // 1. Inicializar Mapa y Capas
+    // 1. CONFIGURACIÓN INICIAL DEL MAPA
     var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false });
     var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
     var googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', {
         maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
     });
     
-    // API Key de tu archivo original
     const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
     var capaLluvia = L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.5 });
-
     var hospitalLayer = L.layerGroup().addTo(map);
-    var hospitalIcon = L.icon({ iconUrl: "placeholder.png", iconSize: [30, 30], iconAnchor: [15, 30] });
+    var hospitalIcon = L.icon({ iconUrl: "placeholder8.png", iconSize: [30, 30], iconAnchor: [15, 30] });
 
     var hospitalesData = [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del Estado"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]];
 
     hospitalesData.forEach(h => { L.marker([h[0], h[1]], {icon: hospitalIcon}).bindPopup(h[2]).addTo(hospitalLayer); });
 
-    // Control de Capas ÚNICO (fuera de funciones)
     var overlays = {
         "<span style='font-size:12px'>🏥 Hospitales</span>": hospitalLayer,
         "<span style='font-size:12px'>🚗 Tráfico Real</span>": googleTraffic,
@@ -95,28 +131,71 @@
     };
     L.control.layers(null, overlays, { collapsed: false, position: 'topright' }).addTo(map);
 
-    // Reloj y Clima
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('clock-now').innerText = now.toLocaleTimeString();
-        document.getElementById('date-now').innerText = now.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
-    }
-    setInterval(updateClock, 1000); updateClock();
+    // 2. LÓGICA DE TIEMPO (RELOJ Y TURNOS)
+    function updateClockAndShifts() {
+        const ahora = new Date();
+        
+        // Reloj Superior
+        document.getElementById('clock-now').innerText = ahora.toLocaleTimeString();
+        document.getElementById('date-now').innerText = ahora.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase();
 
+        // Cálculo de Relevos
+        let horas = ahora.getHours();
+        let proximoRelevo = new Date();
+        let nombreTurno = "";
+
+        if (horas >= 7 && horas < 15) {
+            proximoRelevo.setHours(15, 0, 0, 0);
+            nombreTurno = "Para Turno Vespertino";
+        } else if (horas >= 15 && horas < 23) {
+            proximoRelevo.setHours(23, 0, 0, 0);
+            nombreTurno = "Para Turno Nocturno";
+        } else {
+            if (horas >= 23) proximoRelevo.setDate(proximoRelevo.getDate() + 1);
+            proximoRelevo.setHours(7, 0, 0, 0);
+            nombreTurno = "Para Turno Matutino";
+        }
+
+        let dif = proximoRelevo - ahora;
+        let h = Math.floor(dif / 3600000);
+        let m = Math.floor((dif % 3600000) / 60000);
+        let s = Math.floor((dif % 60000) / 1000);
+
+        document.getElementById('relevo-timer').innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+        document.getElementById('relevo-nombre').innerText = nombreTurno;
+    }
+    setInterval(updateClockAndShifts, 1000);
+    updateClockAndShifts();
+
+    // 3. LÓGICA DE CLIMA Y ALERTAS
     async function obtenerClima() {
         try {
             const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=29.09&lon=-110.96&units=metric&lang=es&appid=${API_KEY}`);
             const datos = await resp.json();
             const temp = Math.round(datos.main.temp);
+            const condicion = datos.weather[0].main.toLowerCase();
+
             document.getElementById('clima-info').innerText = temp + "°C";
             document.getElementById('clima-desc').innerText = datos.weather[0].description;
-            // Alerta por calor extremo
-            if(temp >= 40) { document.getElementById('clima-info').style.color = 'red'; document.getElementById('clima-desc').innerText += " - ¡ALERTA CALOR!"; }
+
+            let alertaT = "SIN ALERTAS";
+            let alertaD = "Condiciones Normales";
+            let colorA = "#2ecc71";
+
+            if (temp >= 40) { alertaT = "⚠️ CALOR EXTREMO"; alertaD = "Protocolo de Hidratación"; colorA = "#e67e22"; }
+            if (condicion.includes("rain")) { alertaT = "🌧️ AVISO LLUVIA"; alertaD = "Precaución: Suelo Mojado"; colorA = "#3498db"; }
+            if (condicion.includes("thunderstorm")) { alertaT = "⚡ TORMENTA"; alertaD = "Alerta de Inundación"; colorA = "#f1c40f"; }
+
+            const el = document.getElementById('alerta-status');
+            el.innerText = alertaT;
+            el.style.color = colorA;
+            document.getElementById('alerta-detalle').innerText = alertaD;
         } catch (e) { console.error("Error clima:", e); }
     }
-    obtenerClima(); setInterval(obtenerClima, 600000);
+    obtenerClima();
+    setInterval(obtenerClima, 600000);
 
-    // Lógica Hospitales
+    // 4. LÓGICA DE HOSPITALES (GOOGLE SHEETS)
     const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv';
 
     async function loadHospitalDetails(targetName) {
@@ -153,7 +232,7 @@
             listaDiv.innerHTML = '';
             hospitalesData.forEach(h => {
                 const item = document.createElement('div');
-                item.style.padding = "8px"; item.style.fontSize = "11px"; item.style.cursor = "pointer"; item.style.borderBottom = "1px solid #bbb";
+                item.style = "padding: 8px; font-size: 11px; cursor: pointer; border-bottom: 1px solid #bbb;";
                 item.innerText = h[2];
                 item.onclick = () => loadHospitalDetails(h[2]);
                 listaDiv.appendChild(item);
