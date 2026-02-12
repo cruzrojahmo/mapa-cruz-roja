@@ -186,7 +186,7 @@
         const marquee = document.getElementById('marquee-content');
         const palabrasClave = ["CHOQUE", "INCENDIO", "ACCIDENTE", "CIERRE", "CERRADO", "OBRAS", "REPARACION", "VÍAS ALTERNAS", "RESTRICCION", "PRECAUCION", "EVITE LA ZONA"];
         const PROXY = "https://api.allorigins.win/get?url=";
-        const FEED_URL = "https://nitter.net/Transito_HMO/rss"; 
+        const FEED_URL = "https://nitter.net/Policia_HMO/rss"; 
         try {
             const resp = await fetch(PROXY + encodeURIComponent(FEED_URL));
             const json = await resp.json();
