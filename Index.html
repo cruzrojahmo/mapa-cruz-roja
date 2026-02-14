@@ -6,6 +6,7 @@
     <title>PADSE - Cruz Roja Hermosillo</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/blueimp-md5/2.19.0/js/md5.min.js"></script>
     <style>
         :root { 
             --rojo-cr: #FF0000; 
@@ -29,6 +30,7 @@
         .sidebar-logo img { width: 160px; margin-bottom: 10px; }
         .nav-menu { list-style: none; padding: 0; margin: 0; }
         .nav-item { padding: 15px 25px; display: flex; align-items: center; font-size: 14px; color: #555 !important; cursor: pointer; transition: 0.3s; }
+        .nav-item:hover { background: rgba(0,0,0,0.05); }
         .nav-item.active { background-color: #1a1a1a; color: white !important; border-left: 4px solid var(--rojo-cr); }
 
         .search-container { padding: 10px 15px; position: relative; }
@@ -62,9 +64,27 @@
         .status-pill { padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; color: white; }
         .bg-disponible { background: #2ecc71; }
         .bg-saturado { background: #e74c3c; }
+
+        /* Estilo Login */
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .login-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; width: 320px; }
+        .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; text-align: center; font-size: 15px; }
+        .login-btn { width: 100%; padding: 12px; background: var(--rojo-cr); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; letter-spacing: 1px; }
     </style>
 </head>
 <body>
+
+<div id="login-overlay">
+    <div class="login-box">
+        <img src="crhmologo.png" alt="Logo" style="width: 150px; margin-bottom: 20px;">
+        <h2 style="font-size: 16px; margin-bottom: 20px; color: #333; font-weight: 700;">ACCESO UNIDADES PADSE</h2>
+        <input type="text" id="user-input" class="login-input" placeholder="Usuario">
+        <input type="password" id="pass-input" class="login-input" placeholder="Contraseña">
+        <button onclick="validarAcceso()" class="login-btn">INGRESAR</button>
+        <p id="login-error" style="color: red; font-size: 11px; margin-top: 15px; display: none; font-weight: bold;">⚠️ Credenciales incorrectas</p>
+    </div>
+    <p style="color: white; font-size: 10px; margin-top: 20px; opacity: 0.5;">SISTEMA PRIVADO - CRUZ ROJA HERMOSILLO</p>
+</div>
 
 <div class="container">
     <div class="sidebar">
@@ -87,6 +107,10 @@
             <li class="nav-item" onclick="toggleHospitalList()">🏥 Hospitales ▾</li>
             <div id="lista-hospitales-desplegable" style="display:none; background: #cecece; padding-left: 5px; max-height: 300px; overflow-y: auto;"></div>
             <li class="nav-item" onclick="cargarZonasRiesgo()">⚠️ Zonas de Riesgo</li>
+            
+            <li class="nav-item" onclick="cerrarSesion()" style="color: #FF0000 !important; margin-top: 20px; border-top: 1px solid #bbb; font-weight: bold;">
+                🚪 Cerrar Sesión
+            </li>
         </ul>
     </div>
 
@@ -142,62 +166,67 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // --- LÓGICA DE SEGURIDAD (MD5) ---
+    const U_H = "f9e18c647b01859368d197607797741d"; // cruzroja_1
+    const P_H = "16960c9102436270682855f9f688849b"; // padsecrhmo26
+
+    function validarAcceso() {
+        const u = document.getElementById('user-input').value;
+        const p = document.getElementById('pass-input').value;
+        const err = document.getElementById('login-error');
+
+        if (md5(u) === U_H && md5(p) === P_H) {
+            sessionStorage.setItem('sesion_padse', 'activa');
+            document.getElementById('login-overlay').style.display = 'none';
+        } else {
+            err.style.display = 'block';
+            document.getElementById('pass-input').value = '';
+        }
+    }
+
+    function cerrarSesion() {
+        sessionStorage.removeItem('sesion_padse');
+        document.getElementById('user-input').value = '';
+        document.getElementById('pass-input').value = '';
+        document.getElementById('login-overlay').style.display = 'flex';
+    }
+
+    // Verificar sesión al cargar
+    window.onload = function() {
+        if (sessionStorage.getItem('sesion_padse') === 'activa') {
+            document.getElementById('login-overlay').style.display = 'none';
+        }
+    };
+
+    // Enter para entrar
+    document.addEventListener('keypress', (e) => { if(e.key === 'Enter') validarAcceso(); });
+
+
     const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
     const SHEET_HOSPITALES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv';
     const UNIDADES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4_Q6g0WAkAHw8t7ZONnY_xppTfxr0Gh736C9IwPgDIM4P2-zDsiPau4HGtACULSg13LlAPuZgbiR8/pub?output=csv';
     const ZONAS_RIESGO_URL = 'https://raw.githubusercontent.com/andresmelendrezm-ops/mapa-cruz-roja/refs/heads/main/zonas_riesgo.geojson';
 
-    // --- CAPAS ESTILO GOOGLE MAPS (SIN COSTO) ---
-    const layerClaro = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains:['mt0','mt1','mt2','mt3']
-    });
-
+    const layerClaro = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'] });
     const layerOscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
-    
-    const googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { 
-        maxZoom: 20, 
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] 
-    });
-    
-    // Capas Meteorológicas
+    const googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] });
     const capaNubes = L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7 });
     const capaLluvia = L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7 });
 
-    // Inicializamos con el mapa de Google Streets
     var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false, layers: [layerClaro, googleTraffic] });
-
     var hospitalLayer = L.layerGroup().addTo(map);
     var riesgoLayer = L.layerGroup();
     var basesLayer = L.layerGroup().addTo(map);
 
-    // --- HOSPITALES ---
     var hospitalesData = [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del State"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]];
     const hospIcon = L.icon({ iconUrl: "placeholder.png", iconSize: [30, 30] });
     hospitalesData.forEach(h => { L.marker([h[0], h[1]], {icon: hospIcon}).bindPopup(h[2]).addTo(hospitalLayer); });
 
-    // --- BASES ---
     const basesData = [{ nombre: "Base Sur", coords: [29.056410825968094, -110.95372333278944] }, { nombre: "Base Centro", coords: [29.0904, -110.9703] }, { nombre: "Base Norte", coords: [29.1418, -110.9853] }];
     const baseIcon = L.icon({ iconUrl: 'bases.png', iconSize: [30, 30], iconAnchor: [15, 30] });
     basesData.forEach(b => L.marker(b.coords, {icon: baseIcon}).bindPopup(`<b>${b.nombre}</b>`).addTo(basesLayer));
 
-    // --- CONTROL DE CAPAS ---
-    L.control.layers(null, { 
-        "🏥 Hospitales": hospitalLayer, 
-        "🚑 Bases CR": basesLayer, 
-        "🚗 Tráfico Real": googleTraffic, 
-        "⚠️ Riesgo": riesgoLayer,
-        "☁️ Nubes (Satélite)": capaNubes,
-        "🌧️ Precipitación": capaLluvia
-    }, { collapsed: false, position: 'topright' }).addTo(map);
-
-    map.on('overlayadd', function(event) {
-        if (event.name === "⚠️ Riesgo") {
-            if (riesgoLayer.getLayers().length === 0) {
-                descargarGeoJSONRiesgo();
-            }
-        }
-    });
+    L.control.layers(null, { "🏥 Hospitales": hospitalLayer, "🚑 Bases CR": basesLayer, "🚗 Tráfico Real": googleTraffic, "⚠️ Riesgo": riesgoLayer, "☁️ Nubes": capaNubes, "🌧️ Precipitación": capaLluvia }, { position: 'topright' }).addTo(map);
 
     async function procesarReportesViales() {
         const marquee = document.getElementById('marquee-content');
@@ -205,7 +234,6 @@
         const fuentes = [{ id: "Policia_HMO", tag: "SEGURIDAD" }, { id: "AguaHermosillo", tag: "AGUA" }, { id: "Sidur_Sonora", tag: "SIDUR" }];
         const PROXY = "https://api.allorigins.win/get?url=";
         let alertasGlobales = [];
-
         try {
             const promesas = fuentes.map(f => {
                 const url = `https://nitter.net/${f.id}/rss`;
@@ -239,66 +267,47 @@
             const data = await resp.json();
             const geojsonLayer = L.geoJSON(data, {
                 style: (f) => ({ fillColor: f.properties.fill || '#FF0000', weight: 2, opacity: 1, color: 'white', fillOpacity: 0.5 }),
-                onEachFeature: (f, l) => {
-                    l.bindTooltip(f.properties.name || f.properties.nombre, { permanent: true, direction: 'center', className: 'etiqueta-riesgo' });
-                }
+                onEachFeature: (f, l) => { l.bindTooltip(f.properties.name || f.properties.nombre, { permanent: true, direction: 'center', className: 'etiqueta-riesgo' }); }
             });
             riesgoLayer.addLayer(geojsonLayer);
             riesgoLayer.addTo(map);
             map.fitBounds(geojsonLayer.getBounds());
-        } catch (e) { console.error("Error:", e); }
+        } catch (e) { console.error(e); }
     }
 
-    async function cargarZonasRiesgo() {
-        if(riesgoLayer.getLayers().length > 0) { riesgoLayer.clearLayers(); map.removeLayer(riesgoLayer); } 
-        else { descargarGeoJSONRiesgo(); }
-    }
+    async function cargarZonasRiesgo() { if(riesgoLayer.getLayers().length > 0) { riesgoLayer.clearLayers(); map.removeLayer(riesgoLayer); } else { descargarGeoJSONRiesgo(); } }
 
-    // --- NUEVA FUNCIÓN DE BÚSQUEDA (TIPO GOOGLE/ARCGIS) ---
     async function buscarDireccion() {
         const query = document.getElementById('address-search').value;
         if (query.length < 4) return;
-
         try {
-            // Utilizamos el motor de ArcGIS que es más preciso para comercios y calles en Hermosillo
             const url = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodeURIComponent(query + ", Hermosillo, Sonora")}&maxLocations=5&outFields=Match_addr`;
-            
             const resp = await fetch(url);
             const data = await resp.json();
             const resCont = document.getElementById('search-results'); 
             resCont.innerHTML = '';
-
-            if (data.candidates && data.candidates.length > 0) {
+            if (data.candidates) {
                 data.candidates.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'search-item';
-                    const nombreMostrar = item.address.split(',')[0]; // Solo el nombre de la calle/lugar
+                    const nombreMostrar = item.address.split(',')[0];
                     div.innerText = nombreMostrar;
-
                     div.onclick = () => {
-                        const lat = item.location.y;
-                        const lon = item.location.x;
-
-                        // Cálculo de base cercana
+                        const lat = item.location.y, lon = item.location.x;
                         let cercana = basesData[0], distMin = Infinity;
                         basesData.forEach(b => { 
                             let d = map.distance([lat, lon], b.coords); 
                             if(d < distMin) { distMin = d; cercana = b; } 
                         });
-
                         map.flyTo([lat, lon], 17);
-                        L.popup()
-                            .setLatLng([lat, lon])
-                            .setContent(`<b>${nombreMostrar}</b><br>BASE CERCANA: <b>${cercana.nombre}</b>`)
-                            .openOn(map);
-                        
+                        L.popup().setLatLng([lat, lon]).setContent(`<b>${nombreMostrar}</b><br>BASE CERCANA: <b>${cercana.nombre}</b>`).openOn(map);
                         document.getElementById('address-search').value = nombreMostrar;
                         resCont.innerHTML = '';
                     };
                     resCont.appendChild(div);
                 });
             }
-        } catch(e) { console.error("Error en búsqueda:", e); }
+        } catch(e) {}
     }
 
     async function toggleHospitalList() {
@@ -367,15 +376,8 @@
 
     function toggleDarkMode() {
         const dark = document.body.classList.toggle('dark-theme');
-        if(dark) { 
-            map.removeLayer(layerClaro); 
-            map.addLayer(layerOscuro); 
-            document.getElementById('btn-dark').innerHTML = "☀️ Modo Claro"; 
-        } else { 
-            map.removeLayer(layerOscuro); 
-            map.addLayer(layerClaro); 
-            document.getElementById('btn-dark').innerHTML = "🌙 Modo Oscuro"; 
-        }
+        if(dark) { map.removeLayer(layerClaro); map.addLayer(layerOscuro); document.getElementById('btn-dark').innerHTML = "☀️ Modo Claro"; } 
+        else { map.removeLayer(layerOscuro); map.addLayer(layerClaro); document.getElementById('btn-dark').innerHTML = "🌙 Modo Oscuro"; }
     }
 
     actualizarDashboard(); obtenerClima(); procesarReportesViales();
