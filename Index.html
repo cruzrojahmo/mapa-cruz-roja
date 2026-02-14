@@ -147,15 +147,24 @@
     const UNIDADES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4_Q6g0WAkAHw8t7ZONnY_xppTfxr0Gh736C9IwPgDIM4P2-zDsiPau4HGtACULSg13LlAPuZgbiR8/pub?output=csv';
     const ZONAS_RIESGO_URL = 'https://raw.githubusercontent.com/andresmelendrezm-ops/mapa-cruz-roja/refs/heads/main/zonas_riesgo.geojson';
 
-    // Capas Base
-    const layerClaro = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    // --- CAPAS ESTILO GOOGLE MAPS (SIN COSTO) ---
+    const layerClaro = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains:['mt0','mt1','mt2','mt3']
+    });
+
     const layerOscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
-    const googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] });
+    
+    const googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { 
+        maxZoom: 20, 
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] 
+    });
     
     // Capas Meteorológicas
     const capaNubes = L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7 });
     const capaLluvia = L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7 });
 
+    // Inicializamos con el mapa de Google Streets
     var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false, layers: [layerClaro, googleTraffic] });
 
     var hospitalLayer = L.layerGroup().addTo(map);
@@ -182,53 +191,36 @@
         "🌧️ Precipitación": capaLluvia
     }, { collapsed: false, position: 'topright' }).addTo(map);
 
-    // --- CORRECCIÓN: Activar carga de datos cuando se selecciona en el menú del mapa ---
     map.on('overlayadd', function(event) {
         if (event.name === "⚠️ Riesgo") {
-            // Solo cargamos si la capa está vacía
             if (riesgoLayer.getLayers().length === 0) {
                 descargarGeoJSONRiesgo();
             }
         }
     });
 
-    // --- FUNCIÓN DE REPORTES VIALES MULTI-FUENTE ---
     async function procesarReportesViales() {
         const marquee = document.getElementById('marquee-content');
-        
-        // Mantenemos tus palabras clave y agregamos las de Agua/SIDUR
         const palabrasClave = ["choque", "semaforo", "volcadura", "inundacion", "emergencia", "incendio", "accidente", "cierre", "cerrado", "obras", "reparacion", "vias alternas", "restriccion", "precaucion", "manifestacion", "emergencia", "evite la zona", "fuga", "socavon", "tuberia", "pavimentacion", "desviacion"];
-        
-        // Cuentas a monitorear
-        const fuentes = [
-            { id: "Policia_HMO", tag: "SEGURIDAD" },
-            { id: "AguaHermosillo", tag: "AGUA" },
-            { id: "Sidur_Sonora", tag: "SIDUR" }
-        ];
-
+        const fuentes = [{ id: "Policia_HMO", tag: "SEGURIDAD" }, { id: "AguaHermosillo", tag: "AGUA" }, { id: "Sidur_Sonora", tag: "SIDUR" }];
         const PROXY = "https://api.allorigins.win/get?url=";
         let alertasGlobales = [];
 
         try {
-            // Consultamos todas las fuentes en paralelo
             const promesas = fuentes.map(f => {
                 const url = `https://nitter.net/${f.id}/rss`;
                 return fetch(PROXY + encodeURIComponent(url)).then(r => r.json());
             });
-
             const resultados = await Promise.all(promesas);
-
             resultados.forEach((json, index) => {
                 if (json.contents) {
                     const xml = new DOMParser().parseFromString(json.contents, "text/xml");
                     const items = xml.querySelectorAll("item");
                     const tag = fuentes[index].tag;
-
                     items.forEach((item, i) => {
-                        if(i < 5) { // Revisamos los 5 últimos posts por cuenta
+                        if(i < 5) {
                             let originalTxt = item.querySelector("title").textContent;
                             let txtNorm = originalTxt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
                             if(palabrasClave.some(p => txtNorm.includes(p))) {
                                 let limpio = originalTxt.replace(/(HTTPS?|FTP):\/\/[\S]+/gi, '').toUpperCase();
                                 alertasGlobales.push(`[${tag}] 🚨 ${limpio}`);
@@ -237,62 +229,76 @@
                     });
                 }
             });
-
-            marquee.innerText = alertasGlobales.length > 0 
-                ? alertasGlobales.join(" | ") + " | " + alertasGlobales[0] 
-                : "✅ MONITOREO VIAL INTEGRAL | OPERACIÓN NORMAL";
-        } catch(e) { 
-            marquee.innerText = "⚠️ RECONECTANDO CON SERVIDORES DE INFORMACIÓN..."; 
-        }
+            marquee.innerText = alertasGlobales.length > 0 ? alertasGlobales.join(" | ") + " | " + alertasGlobales[0] : "✅ MONITOREO VIAL ACTIVO | OPERACIÓN NORMAL";
+        } catch(e) { marquee.innerText = "⚠️ RECONECTANDO SERVIDORES..."; }
     }
 
-    // Separamos la lógica de descarga para reusarla
     async function descargarGeoJSONRiesgo() {
         try {
             const resp = await fetch(ZONAS_RIESGO_URL);
             const data = await resp.json();
             const geojsonLayer = L.geoJSON(data, {
-                style: (f) => ({ fillColor: f.properties.fill || f.properties.color || '#FF0000', weight: 2, opacity: 1, color: f.properties.stroke || 'white', fillOpacity: f.properties['fill-opacity'] || 0.5 }),
+                style: (f) => ({ fillColor: f.properties.fill || '#FF0000', weight: 2, opacity: 1, color: 'white', fillOpacity: 0.5 }),
                 onEachFeature: (f, l) => {
                     l.bindTooltip(f.properties.name || f.properties.nombre, { permanent: true, direction: 'center', className: 'etiqueta-riesgo' });
-                    l.bindPopup(`<b>${f.properties.name || f.properties.nombre}</b><br>Nivel de Riesgo: ${f.properties.nivel_riesgo || 'No definido'}`);
                 }
             });
             riesgoLayer.addLayer(geojsonLayer);
             riesgoLayer.addTo(map);
             map.fitBounds(geojsonLayer.getBounds());
-        } catch (e) { console.error("Error cargando GeoJSON:", e); }
+        } catch (e) { console.error("Error:", e); }
     }
 
     async function cargarZonasRiesgo() {
-        // Lógica para el botón lateral
-        if(riesgoLayer.getLayers().length > 0) { 
-            riesgoLayer.clearLayers(); 
-            map.removeLayer(riesgoLayer); 
-        } else {
-            descargarGeoJSONRiesgo();
-        }
+        if(riesgoLayer.getLayers().length > 0) { riesgoLayer.clearLayers(); map.removeLayer(riesgoLayer); } 
+        else { descargarGeoJSONRiesgo(); }
     }
 
+    // --- NUEVA FUNCIÓN DE BÚSQUEDA (TIPO GOOGLE/ARCGIS) ---
     async function buscarDireccion() {
         const query = document.getElementById('address-search').value;
         if (query.length < 4) return;
+
         try {
-            const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}, Hermosillo, Sonora&limit=5`);
+            // Utilizamos el motor de ArcGIS que es más preciso para comercios y calles en Hermosillo
+            const url = `https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&singleLine=${encodeURIComponent(query + ", Hermosillo, Sonora")}&maxLocations=5&outFields=Match_addr`;
+            
+            const resp = await fetch(url);
             const data = await resp.json();
-            const resCont = document.getElementById('search-results'); resCont.innerHTML = '';
-            data.forEach(item => {
-                const div = document.createElement('div'); div.className = 'search-item'; div.innerText = item.display_name.split(',')[0];
-                div.onclick = () => {
-                    const lat = parseFloat(item.lat), lon = parseFloat(item.lon);
-                    let cercana = basesData[0], distMin = Infinity;
-                    basesData.forEach(b => { let d = map.distance([lat, lon], b.coords); if(d < distMin) { distMin = d; cercana = b; } });
-                    map.flyTo([lat, lon], 16); L.popup().setLatLng([lat, lon]).setContent(`<b>${item.display_name.split(',')[0]}</b><br>BASE CERCANA: <b>${cercana.nombre}</b>`).openOn(map);
-                    resCont.innerHTML = '';
-                };
-                resCont.appendChild(div);
-            });
-        } catch(e) {}
+            const resCont = document.getElementById('search-results'); 
+            resCont.innerHTML = '';
+
+            if (data.candidates && data.candidates.length > 0) {
+                data.candidates.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'search-item';
+                    const nombreMostrar = item.address.split(',')[0]; // Solo el nombre de la calle/lugar
+                    div.innerText = nombreMostrar;
+
+                    div.onclick = () => {
+                        const lat = item.location.y;
+                        const lon = item.location.x;
+
+                        // Cálculo de base cercana
+                        let cercana = basesData[0], distMin = Infinity;
+                        basesData.forEach(b => { 
+                            let d = map.distance([lat, lon], b.coords); 
+                            if(d < distMin) { distMin = d; cercana = b; } 
+                        });
+
+                        map.flyTo([lat, lon], 17);
+                        L.popup()
+                            .setLatLng([lat, lon])
+                            .setContent(`<b>${nombreMostrar}</b><br>BASE CERCANA: <b>${cercana.nombre}</b>`)
+                            .openOn(map);
+                        
+                        document.getElementById('address-search').value = nombreMostrar;
+                        resCont.innerHTML = '';
+                    };
+                    resCont.appendChild(div);
+                });
+            }
+        } catch(e) { console.error("Error en búsqueda:", e); }
     }
 
     async function toggleHospitalList() {
@@ -333,34 +339,8 @@
         try {
             const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=29.09&lon=-110.96&units=metric&lang=es&appid=${API_KEY}`);
             const d = await resp.json();
-            const temp = Math.round(d.main.temp);
-            const desc = d.weather[0].description.toUpperCase();
-            const id = d.weather[0].id;
-            const wind = d.wind.speed * 3.6;
-
-            document.getElementById('clima-info').innerText = temp + "°C";
-            document.getElementById('clima-desc').innerText = desc;
-
-            const alertStatus = document.getElementById('alerta-status');
-            const alertDesc = document.getElementById('alerta-desc');
-
-            if (temp >= 40) {
-                alertStatus.innerText = "CALOR EXTREMO";
-                alertStatus.style.color = "#e67e22";
-                alertDesc.innerText = "RIESGO DE GOLPE DE CALOR";
-            } else if (id >= 200 && id < 600) {
-                alertStatus.innerText = "LLUVIA / TORMENTA";
-                alertStatus.style.color = "#3498db";
-                alertDesc.innerText = "REDUCIR VELOCIDAD - PISO MOJADO";
-            } else if (wind > 40) {
-                alertStatus.innerText = "VIENTOS FUERTES";
-                alertStatus.style.color = "#f1c40f";
-                alertDesc.innerText = "PRECAUCIÓN OBJETOS CAÍDOS";
-            } else {
-                alertStatus.innerText = "SIN ALERTAS";
-                alertStatus.style.color = "#2ecc71";
-                alertDesc.innerText = "OPERACIÓN NORMAL";
-            }
+            document.getElementById('clima-info').innerText = Math.round(d.main.temp) + "°C";
+            document.getElementById('clima-desc').innerText = d.weather[0].description.toUpperCase();
         } catch(e) {}
     }
 
@@ -387,8 +367,15 @@
 
     function toggleDarkMode() {
         const dark = document.body.classList.toggle('dark-theme');
-        if(dark) { map.removeLayer(layerClaro); map.addLayer(layerOscuro); document.getElementById('btn-dark').innerHTML = "☀️ Modo Claro"; }
-        else { map.removeLayer(layerOscuro); map.addLayer(layerClaro); document.getElementById('btn-dark').innerHTML = "🌙 Modo Oscuro"; }
+        if(dark) { 
+            map.removeLayer(layerClaro); 
+            map.addLayer(layerOscuro); 
+            document.getElementById('btn-dark').innerHTML = "☀️ Modo Claro"; 
+        } else { 
+            map.removeLayer(layerOscuro); 
+            map.addLayer(layerClaro); 
+            document.getElementById('btn-dark').innerHTML = "🌙 Modo Oscuro"; 
+        }
     }
 
     actualizarDashboard(); obtenerClima(); procesarReportesViales();
