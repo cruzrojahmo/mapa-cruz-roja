@@ -44,6 +44,10 @@
 
         .etiqueta-riesgo { background: rgba(0, 0, 0, 0.7); border: 1px solid var(--rojo-cr); font-weight: bold; color: white; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
 
+        /* Leyenda Clima */
+        .weather-legend { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); line-height: 18px; color: #333; font-size: 11px; display: none; z-index: 1000; }
+        .weather-legend i { width: 14px; height: 14px; float: left; margin-right: 8px; opacity: 0.9; border-radius: 2px; }
+
         .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
         .dot-turno { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
         .dot-fuera { background: #ff0000; box-shadow: 0 0 5px #ff0000; }
@@ -64,12 +68,10 @@
         .bg-disponible { background: #2ecc71; }
         .bg-saturado { background: #e74c3c; }
 
-        /* Estilo Login */
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .login-box { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; width: 320px; }
         .login-input { width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; text-align: center; font-size: 15px; outline: none; }
         .login-btn { width: 100%; padding: 12px; background: var(--rojo-cr); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; letter-spacing: 1px; }
-        .login-btn:hover { background: #cc0000; }
     </style>
 </head>
 <body>
@@ -83,7 +85,6 @@
         <button onclick="validarAcceso()" class="login-btn">INGRESAR</button>
         <p id="login-error" style="color: red; font-size: 11px; margin-top: 15px; display: none; font-weight: bold;">⚠️ Credenciales incorrectas</p>
     </div>
-    <p style="color: white; font-size: 10px; margin-top: 20px; opacity: 0.5;">SISTEMA PRIVADO - CRUZ ROJA HERMOSILLO</p>
 </div>
 
 <div class="container">
@@ -107,10 +108,7 @@
             <li class="nav-item" onclick="toggleHospitalList()">🏥 Hospitales ▾</li>
             <div id="lista-hospitales-desplegable" style="display:none; background: #cecece; padding-left: 5px; max-height: 300px; overflow-y: auto;"></div>
             <li class="nav-item" onclick="cargarZonasRiesgo()">⚠️ Zonas de Riesgo</li>
-            
-            <li class="nav-item" onclick="cerrarSesion()" style="color: #FF0000 !important; margin-top: 20px; border-top: 1px solid #bbb; font-weight: bold;">
-                🚪 Cerrar Sesión
-            </li>
+            <li class="nav-item" onclick="cerrarSesion()" style="color: #FF0000 !important; margin-top: 20px; border-top: 1px solid #bbb; font-weight: bold;">🚪 Cerrar Sesión</li>
         </ul>
     </div>
 
@@ -166,40 +164,21 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // --- LÓGICA DE SEGURIDAD MEJORADA ---
-    const U_ENC = "Y3J1enJvamFfMQ=="; // cruzroja_1
-    const P_ENC = "cGFkc2VjcmhtbzI2"; // padsecrhmo26
+    const U_ENC = "Y3J1enJvamFfMQ=="; 
+    const P_ENC = "cGFkc2VjcmhtbzI2"; 
 
     function validarAcceso() {
         const u = document.getElementById('user-input').value.trim().toLowerCase();
         const p = document.getElementById('pass-input').value.trim().toLowerCase();
-        const err = document.getElementById('login-error');
-
-        // atob decodifica Base64
         if (u === atob(U_ENC) && p === atob(P_ENC)) {
             sessionStorage.setItem('sesion_padse', 'activa');
             document.getElementById('login-overlay').style.display = 'none';
         } else {
-            err.style.display = 'block';
-            document.getElementById('pass-input').value = '';
-            document.getElementById('pass-input').style.borderColor = 'red';
-            setTimeout(() => { document.getElementById('pass-input').style.borderColor = '#ccc'; }, 1000);
+            document.getElementById('login-error').style.display = 'block';
         }
     }
 
-    function cerrarSesion() {
-        sessionStorage.removeItem('sesion_padse');
-        location.reload();
-    }
-
-    // Enter para entrar
-    document.addEventListener('keypress', (e) => { 
-        if(e.key === 'Enter') {
-            if(document.getElementById('login-overlay').style.display !== 'none') {
-                validarAcceso();
-            }
-        }
-    });
+    function cerrarSesion() { sessionStorage.removeItem('sesion_padse'); location.reload(); }
 
     const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
     const SHEET_HOSPITALES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv';
@@ -209,13 +188,38 @@
     const layerClaro = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains:['mt0','mt1','mt2','mt3'] });
     const layerOscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
     const googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] });
-    const capaNubes = L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7 });
-    const capaLluvia = L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7 });
+    
+    // Capas meteorológicas
+    const capaNubes = L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.7, zIndex: 1000 });
+    const capaLluvia = L.tileLayer(`https://tile.openweathermap.org/map/precipitation_new/{z}/{x}/{y}.png?appid=${API_KEY}`, { opacity: 0.8, zIndex: 1001 });
 
     var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false, layers: [layerClaro, googleTraffic] });
     var hospitalLayer = L.layerGroup().addTo(map);
     var riesgoLayer = L.layerGroup();
     var basesLayer = L.layerGroup().addTo(map);
+
+    // LÓGICA DE LA LEYENDA CLIMÁTICA
+    var weatherLegend = L.control({position: 'bottomleft'});
+    weatherLegend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'weather-legend');
+        div.id = 'weather-legend-id';
+        div.innerHTML = '<strong>Intensidad de Lluvia</strong><br>' +
+            '<i style="background:#50e3fe"></i> Ligera<br>' +
+            '<i style="background:#00a5ff"></i> Moderada<br>' +
+            '<i style="background:#0000ff"></i> Fuerte<br>' +
+            '<i style="background:#ff0000"></i> Extrema';
+        return div;
+    };
+    weatherLegend.addTo(map);
+
+    // Eventos de Capas para mostrar/ocultar leyenda y cargar riesgo
+    map.on('overlayadd', function(e) {
+        if (e.name === "🌧️ Precipitación") document.getElementById('weather-legend-id').style.display = 'block';
+        if (e.name === "⚠️ Riesgo" && riesgoLayer.getLayers().length === 0) descargarGeoJSONRiesgo();
+    });
+    map.on('overlayremove', function(e) {
+        if (e.name === "🌧️ Precipitación") document.getElementById('weather-legend-id').style.display = 'none';
+    });
 
     var hospitalesData = [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del State"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]];
     const hospIcon = L.icon({ iconUrl: "placeholder.png", iconSize: [30, 30] });
@@ -225,11 +229,18 @@
     const baseIcon = L.icon({ iconUrl: 'bases.png', iconSize: [30, 30], iconAnchor: [15, 30] });
     basesData.forEach(b => L.marker(b.coords, {icon: baseIcon}).bindPopup(`<b>${b.nombre}</b>`).addTo(basesLayer));
 
-    L.control.layers(null, { "🏥 Hospitales": hospitalLayer, "🚑 Bases CR": basesLayer, "🚗 Tráfico Real": googleTraffic, "⚠️ Riesgo": riesgoLayer, "☁️ Nubes": capaNubes, "🌧️ Precipitación": capaLluvia }, { position: 'topright' }).addTo(map);
+    L.control.layers(null, { 
+        "🏥 Hospitales": hospitalLayer, 
+        "🚑 Bases CR": basesLayer, 
+        "🚗 Tráfico Real": googleTraffic, 
+        "⚠️ Riesgo": riesgoLayer, 
+        "☁️ Nubes": capaNubes, 
+        "🌧️ Precipitación": capaLluvia 
+    }, { position: 'topright' }).addTo(map);
 
     async function procesarReportesViales() {
         const marquee = document.getElementById('marquee-content');
-        const palabrasClave = ["choque", "semaforo", "volcadura", "inundacion", "emergencia", "incendio", "accidente", "cierre", "cerrado", "obras", "reparacion", "vias alternas", "restriccion", "precaucion", "manifestacion", "emergencia", "evite la zona", "fuga", "socavon", "tuberia", "pavimentacion", "desviacion"];
+        const palabrasClave = ["choque", "semaforo", "volcadura", "inundacion", "emergencia", "incendio", "accidente", "cierre", "cerrado", "obras", "reparacion", "vias alternas", "restriccion", "precaucion", "manifestacion", "fuga", "socavon", "pavimentacion"];
         const fuentes = [{ id: "Policia_HMO", tag: "SEGURIDAD" }, { id: "AguaHermosillo", tag: "AGUA" }, { id: "Sidur_Sonora", tag: "SIDUR" }];
         const PROXY = "https://api.allorigins.win/get?url=";
         let alertasGlobales = [];
@@ -274,7 +285,14 @@
         } catch (e) { console.error(e); }
     }
 
-    async function cargarZonasRiesgo() { if(riesgoLayer.getLayers().length > 0) { riesgoLayer.clearLayers(); map.removeLayer(riesgoLayer); } else { descargarGeoJSONRiesgo(); } }
+    async function cargarZonasRiesgo() { 
+        if(riesgoLayer.getLayers().length > 0) { 
+            riesgoLayer.clearLayers(); 
+            map.removeLayer(riesgoLayer); 
+        } else { 
+            descargarGeoJSONRiesgo(); 
+        } 
+    }
 
     async function buscarDireccion() {
         const query = document.getElementById('address-search').value;
@@ -379,7 +397,6 @@
         else { map.removeLayer(layerOscuro); map.addLayer(layerClaro); document.getElementById('btn-dark').innerHTML = "🌙 Modo Oscuro"; }
     }
 
-    // Inicialización al cargar la ventana
     window.onload = function() {
         if (sessionStorage.getItem('sesion_padse') === 'activa') {
             document.getElementById('login-overlay').style.display = 'none';
