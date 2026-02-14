@@ -365,9 +365,30 @@
         try {
             const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=29.09&lon=-110.96&units=metric&lang=es&appid=${API_KEY}`);
             const d = await resp.json();
+            
+            // Actualizar Tarjeta de Clima
             document.getElementById('clima-info').innerText = Math.round(d.main.temp) + "°C";
             document.getElementById('clima-desc').innerText = d.weather[0].description.toUpperCase();
-        } catch(e) {}
+
+            // Lógica para Alertas Meteorológicas en el Dashboard
+            const statusEl = document.getElementById('alerta-status');
+            const descEl = document.getElementById('alerta-desc');
+            const mainWeather = d.weather[0].main.toLowerCase();
+
+            if (mainWeather.includes('rain') || mainWeather.includes('thunderstorm') || mainWeather.includes('drizzle')) {
+                statusEl.innerText = "ALERTA: LLUVIA";
+                statusEl.style.color = "#FFD700"; // Dorado/Amarillo
+                descEl.innerText = "PRECIPITACIÓN DETECTADA";
+            } else if (d.main.temp >= 40) {
+                statusEl.innerText = "ALERTA: CALOR";
+                statusEl.style.color = "#FF4500"; // Naranja rojizo
+                descEl.innerText = "TEMPERATURAS EXTREMAS";
+            } else {
+                statusEl.innerText = "SIN ALERTAS";
+                statusEl.style.color = "#2ecc71";
+                descEl.innerText = "OPERACIÓN NORMAL";
+            }
+        } catch(e) { console.error("Error clima:", e); }
     }
 
     let unidadesCache = [];
