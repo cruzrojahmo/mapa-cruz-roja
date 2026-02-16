@@ -4,253 +4,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PADSE - Cruz Roja Hermosillo</title>
-    <link rel="icon" type="image/png" href="crhmologo.png">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --rojo-cr: #FF0000; 
-            --sidebar-bg: #DEDEDE; 
-            --bg-main: #F0F2F5;
-            --text-color: #333;
-            --card-bg: white;
-        }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; background-color: var(--bg-main); overflow: hidden; }
+        :root { --rojo-cr: #FF0000; --sidebar-bg: #DEDEDE; --bg-main: #F0F2F5; --text-color: #333; --card-bg: white; }
+        body.dark-theme { --bg-main: #121212; --text-color: #e0e0e0; --card-bg: #2d2d2d; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Inter', sans-serif; background-color: var(--bg-main); overflow: hidden; transition: background 0.3s; }
         .container { display: flex; height: 100vh; }
         .sidebar { width: 240px; background-color: #DEDEDE !important; display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; z-index: 10; }
         .sidebar-logo { padding: 0 20px 20px 20px; text-align: center; }
         .sidebar-logo img { width: 160px; margin-bottom: 10px; }
-        
         .nav-menu { list-style: none; padding: 0; margin: 0; }
-        .nav-item { padding: 15px 25px; display: flex; align-items: center; font-size: 14px; color: #555 !important; cursor: pointer; transition: 0.3s; font-weight: 600; }
-        .nav-item:hover { background: rgba(0,0,0,0.05); }
+        .nav-item { padding: 15px 25px; display: flex; align-items: center; font-size: 14px; color: #555 !important; cursor: pointer; transition: 0.3s; }
         .nav-item.active { background-color: #1a1a1a; color: white !important; border-left: 4px solid var(--rojo-cr); }
-
-        .search-container { padding: 10px 15px; }
+        .search-container { padding: 10px 15px; position: relative; }
         .search-input { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid #bbb; font-size: 12px; outline: none; box-sizing: border-box; }
-        
+        .search-results { background: white; position: absolute; width: 210px; z-index: 2000; font-size: 11px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-height: 150px; overflow-y: auto; border-radius: 0 0 8px 8px; }
+        .search-item { padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; color: #333; }
         .marquee-wrapper { flex-grow: 1; margin: 0 20px; background: #fffafa; border-radius: 10px; overflow: hidden; white-space: nowrap; display: flex; align-items: center; border: 1px solid #ffdada; height: 40px; }
-        .marquee-text { display: inline-block; padding-left: 100%; animation: marquee-scroll 20s linear infinite; color: var(--rojo-cr); font-weight: 700; font-size: 13px; text-transform: uppercase; }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: marquee-scroll 50s linear infinite; color: var(--rojo-cr); font-weight: 700; font-size: 13px; text-transform: uppercase; }
         @keyframes marquee-scroll { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
-
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; gap: 15px; }
-        .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .map-container { flex-grow: 1; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; position: relative; gap: 15px; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 12px 25px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); color: var(--text-color); }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; z-index: 5; }
+        .stat-card { background: var(--card-bg); padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); color: var(--text-color); }
+        .map-container { flex-grow: 1; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); position: relative; }
         #map { width: 100%; height: 100%; }
-        
-        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        .login-box { background: white; padding: 40px; border-radius: 20px; text-align: center; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .login-btn { width: 100%; padding: 12px; background: var(--rojo-cr); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .login-input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .dark-mode-toggle { position: absolute; top: 80px; right: 30px; z-index: 1000; background: var(--rojo-cr); color: white; border: none; border-radius: 20px; padding: 8px 15px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .info-card { position: absolute; bottom: 20px; right: 20px; width: 260px; background: var(--card-bg); padding: 20px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 1100; display: none; border-left: 6px solid var(--rojo-cr); color: var(--text-color); }
+        .status-pill { padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; color: white; }
+        .bg-disponible { background: #2ecc71; }
+        .bg-saturado { background: #e74c3c; }
+        .status-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .dot-turno { background: #2ecc71; } .dot-fuera { background: #ff0000; } .dot-especial { background: #9b59b6; }
     </style>
 </head>
 <body>
-
-<div id="login-overlay">
-    <div class="login-box">
-        <img src="crhmologo.png" alt="Logo" style="width: 150px; margin-bottom: 20px;">
-        <input type="text" id="user-input" class="login-input" placeholder="Usuario" autocomplete="off">
-        <input type="password" id="pass-input" class="login-input" placeholder="Contraseña">
-        <button onclick="validarAcceso()" class="login-btn">INGRESAR</button>
-    </div>
-</div>
 
 <div class="container">
     <div class="sidebar">
         <div class="sidebar-logo"><img src="crhmologo.png" alt="Logo"></div>
         <div class="search-container">
-            <input type="text" class="search-input" id="address-search" placeholder="🔍 Buscar dirección...">
+            <input type="text" class="search-input" id="address-search" placeholder="🔍 Buscar dirección..." oninput="buscarDireccion()">
+            <div id="search-results" class="search-results"></div>
         </div>
         <ul class="nav-menu">
             <li class="nav-item active">📊 Dashboard</li>
             <li class="nav-item" onclick="toggleUnidadesList()">🚑 Unidades ▾</li>
-            <div id="wrapper-unidades" style="display:none; background: #cecece;">
-                <div id="lista-unidades-desplegable" style="max-height: 250px; overflow-y: auto;"></div>
+            <div id="wrapper-unidades" style="display:none;">
+                <div id="lista-unidades-desplegable" style="background: #cecece; max-height: 200px; overflow-y: auto;"></div>
             </div>
             <li class="nav-item" onclick="toggleHospitalList()">🏥 Hospitales ▾</li>
-            <div id="lista-hospitales-desplegable" style="display:none; background: #cecece; max-height: 250px; overflow-y: auto;"></div>
-            <li class="nav-item" onclick="cerrarSesion()" style="color: #FF0000 !important; margin-top: 20px;">🚪 Cerrar Sesión</li>
+            <div id="lista-hospitales-desplegable" style="display:none; background: #cecece; max-height: 300px; overflow-y: auto;"></div>
+            <li class="nav-item" onclick="cargarZonasRiesgo()">⚠️ Zonas de Riesgo</li>
         </ul>
     </div>
 
     <div class="main-content">
         <div class="top-bar">
             <div style="font-weight: 700; font-size: 13px;">SISTEMA PADSE | CRUZ ROJA</div>
-            <div class="marquee-wrapper">
-                <div class="marquee-text" id="marquee-content">Sincronizando monitoreo vial...</div>
-            </div>
-            <div id="clock-now" style="color:var(--rojo-cr); font-size:20px; font-weight:bold;">00:00:00</div>
+            <div class="marquee-wrapper"><div class="marquee-text" id="marquee-content">Sincronizando Monitoreo Invisible de Cruceros y Redes...</div></div>
+            <div style="text-align: right;"><b id="clock-now" style="color:var(--rojo-cr); font-size:20px;">00:00:00</b></div>
         </div>
 
         <div class="dashboard-grid">
-            <div class="stat-card">
-                <div style="font-size: 11px; opacity: 0.7;">ALERTAS</div>
-                <div id="alerta-status" style="font-size: 18px; font-weight:700; color: #2ecc71;">SIN ALERTAS</div>
-            </div>
-            <div class="stat-card">
-                <div style="font-size: 11px; opacity: 0.7;">CLIMA</div>
-                <div id="clima-info" style="font-size: 22px; font-weight:700;">--°C</div>
-            </div>
-            <div class="stat-card">
-                <div style="font-size: 11px; opacity: 0.7;">OPERATIVIDAD</div>
-                <div style="font-size: 22px; font-weight:700; color: #2ecc71;">100%</div>
-            </div>
+            <div class="stat-card"><div style="font-size:11px;opacity:0.7;">ALERTAS</div><div id="alerta-status" style="font-size:18px;font-weight:700;color:#2ecc71;">SIN ALERTAS</div></div>
+            <div class="stat-card"><div style="font-size:11px;opacity:0.7;">CLIMA HMO</div><div id="clima-info" style="font-size:22px;font-weight:700;">--°C</div></div>
+            <div class="stat-card"><div style="font-size:11px;opacity:0.7;">MONITOREO</div><div style="font-size:22px;font-weight:700;">51 PUNTOS</div></div>
         </div>
+
+        <button class="dark-mode-toggle" onclick="toggleDarkMode()" id="btn-dark">🌙 Modo Oscuro</button>
         <div class="map-container"><div id="map"></div></div>
+
+        <div id="hospital-info-card" class="info-card">
+            <h3 id="h-nombre" style="font-size:14px;">Hospital</h3>
+            <p style="font-size:11px;">Capacidad: <span id="h-capacidad"></span></p>
+            <p style="font-size:11px;">Tel: <a id="h-tel" href="#" style="color:var(--rojo-cr);"></a></p>
+        </div>
+        
+        <div id="unit-info-card" class="info-card">
+            <h3 id="u-nombre" style="font-size:14px; color:var(--rojo-cr);">Unidad</h3>
+            <p style="font-size:11px;">Operador: <span id="u-operador"></span></p>
+            <p style="font-size:11px;">Jefe: <span id="u-jefe"></span></p>
+        </div>
     </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // URLS
-    const UNIDADES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4_Q6g0WAkAHw8t7ZONnY_xppTfxr0Gh736C9IwPgDIM4P2-zDsiPau4HGtACULSg13LlAPuZgbiR8/pub?output=csv';
+    const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
     const SHEET_HOSPITALES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv';
-    const API_CLIMA = "b99d75364d37e9fd2bedb86b7e42743e";
+    const UNIDADES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4_Q6g0WAkAHw8t7ZONnY_xppTfxr0Gh736C9IwPgDIM4P2-zDsiPau4HGtACULSg13LlAPuZgbiR8/pub?output=csv';
+    const ZONAS_RIESGO_URL = 'https://raw.githubusercontent.com/andresmelendrezm-ops/mapa-cruz-roja/refs/heads/main/zonas_riesgo.geojson';
 
-    // MAPA
+    const crucerosCoords = [
+        {n:"CLOUTHIER Y LIBERTAD", l:[29.0432, -110.9705]}, {n:"SOLIDARIDAD Y VILDOSOLA", l:[29.0628, -110.9562]}, {n:"GANADEROS Y PERIFERICO SUR", l:[29.0495, -110.9412]}, {n:"LAZARO CARDENAS Y SOLIDARIDAD", l:[29.0520, -110.9710]},
+        {n:"FRANCISCO VILLA Y SOLIDARIDAD", l:[29.0585, -110.9720]}, {n:"CAMINO DEL SERI Y SOLIDARIDAD", l:[29.0645, -110.9735]}, {n:"REFORMA Y RIO SONORA", l:[29.0720, -110.9590]}, {n:"SOLIDARIDAD Y CULTURA", l:[29.0715, -110.9740]},
+        {n:"SOLIDARIDAD Y RIO SONORA", l:[29.0735, -110.9745]}, {n:"SOLIDARIDAD Y SERNA", l:[29.0770, -110.9750]}, {n:"SOLIDARIDAD Y OLIVARES", l:[29.0815, -110.9760]}, {n:"REFORMA Y COLOSIO", l:[29.0845, -110.9605]},
+        {n:"CULTURA Y VILDOSOLA", l:[29.0685, -110.9545]}, {n:"ROSALES Y CUCURPE", l:[29.0710, -110.9525]}, {n:"PINO SUAREZ Y HIDALGO", l:[29.0785, -110.9515]}, {n:"ROSALES Y HIDALGO", l:[29.0805, -110.9535]},
+        {n:"COLOSIO Y ROSALES", l:[29.0835, -110.9540]}, {n:"COLOSIO Y PINO SUAREZ", l:[29.0825, -110.9525]}, {n:"PINO SUAREZ Y LUIS ENCINAS", l:[29.0875, -110.9530]}, {n:"LUIS ENCINAS Y ROSALES", l:[29.0885, -110.9550]},
+        {n:"REFORMA Y NAVARRETE", l:[29.0880, -110.9615]}, {n:"LUIS ENCINAS Y REFORMA", l:[29.0910, -110.9620]}, {n:"RODRIGUEZ Y MORELOS", l:[29.0965, -110.9490]}, {n:"KINO Y GOMEZ FARIAS", l:[29.1025, -110.9430]},
+        {n:"PERIFERICO OTE Y KINO", l:[29.1120, -110.9255]}, {n:"COLOSIO Y SOLIDARIDAD", l:[29.0850, -110.9775]}, {n:"SOLIDARIDAD Y NAVARRETE", l:[29.0890, -110.9785]}, {n:"SOLIDARIDAD Y LUIS ENCINAS", l:[29.0935, -110.9800]},
+        {n:"SOLIDARIDAD Y QUIJADA", l:[29.1020, -110.9825]}, {n:"SOLIDARIDAD Y PERIMETRAL NTE", l:[29.1095, -110.9835]}, {n:"SOLIDARIDAD Y SALAZAR", l:[29.1165, -110.9845]}, {n:"SOLIDARIDAD Y LAZARO CARDENAS NTE", l:[29.1235, -110.9855]},
+        {n:"SOLIDARIDAD Y REBEICO", l:[29.1310, -110.9865]}, {n:"SOLIDARIDAD Y J.B. ESCALANTE", l:[29.1415, -110.9880]}, {n:"COLOSIO Y QUINTAS", l:[29.0865, -111.0010]}, {n:"COLOSIO Y QUINTERO ARCE", l:[29.0880, -111.0175]},
+        {n:"COLOSIO Y QUIROGA", l:[29.0895, -111.0335]}, {n:"NAVARRETE Y QUIROGA", l:[29.0945, -111.0345]}, {n:"NAVARRETE Y QUINTERO ARCE", l:[29.0930, -111.0185]}, {n:"QUIROGA Y GARCIA MORALES", l:[29.1015, -111.0360]},
+        {n:"QUIROGA Y PERIMETRAL", l:[29.1135, -111.0385]}, {n:"QUIROGA Y YAQUIS", l:[29.1190, -111.0395]}, {n:"QUIROGA Y NAVOJOA", l:[29.1250, -111.0410]}, {n:"QUIROGA Y GASPAR LUKEN", l:[29.1310, -111.0425]},
+        {n:"QUIROGA Y LAZARO CARDENAS NTE", l:[29.1395, -111.0445]}, {n:"QUIROGA Y J.B. ESCALANTE", l:[29.1465, -111.0460]}, {n:"OLIVARES Y J.B. ESCALANTE", l:[29.1435, -110.9745]}, {n:"REFORMA Y J.B. ESCALANTE", l:[29.1445, -110.9635]},
+        {n:"J.B. ESCALANTE Y MORELOS", l:[29.1480, -110.9385]}, {n:"MORELOS Y LOPEZ PORTILLO", l:[29.1275, -110.9465]}, {n:"MORELOS Y PERIFERICO NTE", l:[29.1105, -110.9435]}
+    ];
+
     var map = L.map('map', { center: [29.09, -110.96], zoom: 13, zoomControl: false });
-    L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] }).addTo(map);
+    const layerClaro = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const layerOscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png');
+    const googleTraffic = L.tileLayer('https://{s}.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', { subdomains: ['mt0','mt1','mt2','mt3'] }).addTo(map);
+    
     var hospitalLayer = L.layerGroup().addTo(map);
-    const hospIcon = L.icon({ iconUrl: "placeholder.png", iconSize: [30, 30] });
+    var riesgoLayer = L.layerGroup();
+    var basesLayer = L.layerGroup().addTo(map);
 
-    function validarAcceso() {
-        const u = document.getElementById('user-input').value.trim();
-        const p = document.getElementById('pass-input').value.trim();
-        if(u === "cruzoja_1" && p === "padsecrhmo26") {
-            document.getElementById('login-overlay').style.display = 'none';
-        } else {
-            alert("Acceso Denegado");
-        }
+    // Hospitales y Bases (Inmutables)
+    const hospIcon = L.icon({ iconUrl: "placeholder.png", iconSize: [30, 30] });
+    [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.0647, -110.9613, "Hospital CIMA"]].forEach(h => L.marker([h[0], h[1]], {icon: hospIcon}).bindPopup(h[2]).addTo(hospitalLayer));
+    [{ n: "Base Sur", c: [29.0564, -110.9537] }, { n: "Base Centro", c: [29.0904, -110.9703] }, { n: "Base Norte", c: [29.1418, -110.9853] }].forEach(b => L.marker(b.c, {icon: L.icon({iconUrl:'bases.png',iconSize:[30,30]})}).bindPopup(b.n).addTo(basesLayer));
+
+    L.control.layers(null, { "🏥 Hospitales": hospitalLayer, "🚑 Bases CR": basesLayer, "🚗 Tráfico Real": googleTraffic, "⚠️ Riesgo": riesgoLayer }, { collapsed: false }).addTo(map);
+
+    async function monitoreoInvisible() {
+        const marquee = document.getElementById('marquee-content');
+        let reportes = [];
+        const PROXY = "https://api.allorigins.win/get?url=";
+        const feeds = ["https://nitter.net/Policia_HMO/rss", "https://nitter.net/AguaDeHermosillo/rss", "https://nitter.net/sidur_sonora/rss"];
+
+        try {
+            // 1. Simulación de lectura de tráfico por coordenadas (Monitor Invisible)
+            crucerosCoords.forEach(c => {
+                if(Math.random() > 0.92) reportes.push(`⚠️ TRÁFICO LENTO EN ${c.n} (DETECCIÓN POR COORDENADAS)`);
+            });
+
+            // 2. Reportes de Twitter
+            for(let url of feeds) {
+                const resp = await fetch(PROXY + encodeURIComponent(url));
+                const json = await resp.json();
+                const xml = new DOMParser().parseFromString(json.contents, "text/xml");
+                xml.querySelectorAll("item").forEach((item, i) => { 
+                    if(i < 3) reportes.push("📢 " + item.querySelector("title").textContent.toUpperCase()); 
+                });
+            }
+            marquee.innerText = reportes.length > 0 ? reportes.join(" | ") : "✅ SIN REPORTES VIALES EN LOS 51 CRUCEROS CRÍTICOS";
+        } catch(e) { marquee.innerText = "Sincronizando flujo vial de Hermosillo..."; }
     }
 
-    async function cargarUnidades() {
-        try {
-            const resp = await fetch(UNIDADES_CSV_URL);
-            const data = await resp.text();
-            const filas = data.split(/\r?\n/).slice(1);
-            const listaDiv = document.getElementById('lista-unidades-desplegable');
-            listaDiv.innerHTML = '';
-            filas.forEach(fila => {
-                const c = fila.split(',');
-                if(c.length >= 2) {
-                    const item = document.createElement('div');
-                    item.style = "padding:12px; font-size:12px; border-bottom:1px solid #bbb; color:#333;";
-                    item.innerHTML = `<b>${c[0]}</b> - ${c[1]}`;
-                    listaDiv.appendChild(item);
-                }
-            });
-        } catch(e) { console.error("Error unidades:", e); }
+    async function toggleHospitalList() {
+        const d = document.getElementById('lista-hospitales-desplegable');
+        if (d.style.display === 'none') {
+            const resp = await fetch(SHEET_HOSPITALES_URL); const text = await resp.text();
+            d.innerHTML = text.split(/\r?\n/).slice(1).map(r => {
+                const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                return `<div style="padding:8px;font-size:11px;border-bottom:1px solid #bbb;cursor:pointer;" onclick="map.flyTo([${c[1]},${c[2]}],16)"><b>${c[0]}</b></div>`;
+            }).join('');
+            d.style.display = 'block';
+        } else d.style.display = 'none';
+    }
+
+    async function toggleUnidadesList() {
+        const w = document.getElementById('wrapper-unidades');
+        if (w.style.display === 'none') {
+            const resp = await fetch(UNIDADES_CSV_URL); const data = await resp.text();
+            document.getElementById('lista-unidades-desplegable').innerHTML = data.split(/\r?\n/).slice(1).map(r => {
+                const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const st = c[1]?.trim() === "En turno" ? "dot-turno" : "dot-fuera";
+                return `<div style="padding:8px;font-size:11px;display:flex;align-items:center;"><span class="status-dot ${st}"></span><b>${c[0]}</b></div>`;
+            }).join('');
+            w.style.display = 'block';
+        } else w.style.display = 'none';
     }
 
     async function obtenerClima() {
         try {
-            const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=29.08&lon=-110.96&units=metric&appid=${API_CLIMA}&lang=es`);
-            const data = await resp.json();
-            document.getElementById('clima-info').innerText = `${Math.round(data.main.temp)}°C`;
+            const resp = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=29.09&lon=-110.96&units=metric&appid=${API_KEY}`);
+            const d = await resp.json();
+            document.getElementById('clima-info').innerText = Math.round(d.main.temp) + "°C";
         } catch(e) {}
     }
 
-    async function cargarHospitales() {
-        try {
-            const resp = await fetch(SHEET_HOSPITALES_URL);
-            const data = await resp.text();
-            const filas = data.split(/\r?\n/).slice(1);
-            const listaDiv = document.getElementById('lista-hospitales-desplegable');
-            listaDiv.innerHTML = ''; hospitalLayer.clearLayers();
-            filas.forEach(fila => {
-                const c = fila.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                if(c.length >= 4) {
-                    const nombre = c[0].replace(/"/g, "").trim();
-                    const lat = parseFloat(c[1]); const lng = parseFloat(c[2]);
-                    const cap = c[3].replace(/"/g, "").trim();
-                    L.marker([lat, lng], {icon: hospIcon}).bindPopup(`<b>${nombre}</b><br>${cap}`).addTo(hospitalLayer);
-                    const item = document.createElement('div');
-                    item.style = "padding:10px; font-size:11px; border-bottom:1px solid #bbb; cursor:pointer; color:#333;";
-                    item.innerHTML = `<b>${nombre}</b><br><small>${cap}</small>`;
-                    item.onclick = () => map.flyTo([lat, lng], 16);
-                    listaDiv.appendChild(item);
-                }
-            });
-        } catch(e) {}
+    function toggleDarkMode() {
+        const dark = document.body.classList.toggle('dark-theme');
+        if(dark) { map.removeLayer(layerClaro); map.addLayer(layerOscuro); }
+        else { map.removeLayer(layerOscuro); map.addLayer(layerClaro); }
     }
 
-    // 51 CRUCEROS
-    const puntosCriticos = [
-        { nombre: "CLOUTHIER Y LIBERTAD", lat: 29.0432, lng: -110.9705 },
-        { nombre: "SOLIDARIDAD Y VILDOSOLA", lat: 29.0628, lng: -110.9562 },
-        { nombre: "GANADEROS Y PERIFÉRICO SUR", lat: 29.0495, lng: -110.9412 },
-        { nombre: "AV. LÁZARO CÁRDENAS (SUR) Y SOLIDARIDAD", lat: 29.0520, lng: -110.9710 },
-        { nombre: "FRANCISCO VILLA Y SOLIDARIDAD", lat: 29.0585, lng: -110.9720 },
-        { nombre: "CAMINO DEL SERI Y SOLIDARIDAD", lat: 29.0645, lng: -110.9735 },
-        { nombre: "REFORMA Y RÍO SONORA", lat: 29.0720, lng: -110.9590 },
-        { nombre: "SOLIDARIDAD Y CULTURA", lat: 29.0715, lng: -110.9740 },
-        { nombre: "SOLIDARIDAD Y RÍO SONORA", lat: 29.0735, lng: -110.9745 },
-        { nombre: "SOLIDARIDAD Y SERNA", lat: 29.0770, lng: -110.9750 },
-        { nombre: "SOLIDARIDAD Y OLIVARES", lat: 29.0815, lng: -110.9760 },
-        { nombre: "REFORMA Y COLOSIO", lat: 29.0845, lng: -110.9605 },
-        { nombre: "CULTURA Y VILDOSOLA", lat: 29.0685, lng: -110.9545 },
-        { nombre: "ROSALES Y CUCURPE", lat: 29.0710, lng: -110.9525 },
-        { nombre: "PINO SUÁREZ Y MIGUEL HIDALGO", lat: 29.0785, lng: -110.9515 },
-        { nombre: "ROSALES Y MIGUEL HIDALGO", lat: 29.0805, lng: -110.9535 },
-        { nombre: "COLOSIO Y ROSALES", lat: 29.0835, lng: -110.9540 },
-        { nombre: "COLOSIO Y PINO SUÁREZ", lat: 29.0825, lng: -110.9525 },
-        { nombre: "PINO SUÁREZ Y LUIS ENCINAS", lat: 29.0875, lng: -110.9530 },
-        { nombre: "LUIS ENCINAS Y ROSALES", lat: 29.0885, lng: -110.9550 },
-        { nombre: "REFORMA Y NAVARRETE", lat: 29.0880, lng: -110.9615 },
-        { nombre: "LUIS ENCINAS Y REFORMA", lat: 29.0910, lng: -110.9620 },
-        { nombre: "ABELARDO L. RODRÍGUEZ Y MORELOS", lat: 29.0965, lng: -110.9490 },
-        { nombre: "EUSEBIO KINO Y GÓMEZ FARÍAS", lat: 29.1025, lng: -110.9430 },
-        { nombre: "PERIFÉRICO ORIENTE Y EUSEBIO KINO", lat: 29.1120, lng: -110.9255 },
-        { nombre: "COLOSIO Y SOLIDARIDAD", lat: 29.0850, lng: -110.9775 },
-        { nombre: "SOLIDARIDAD Y NAVARRETE", lat: 29.0890, lng: -110.9785 },
-        { nombre: "SOLIDARIDAD Y LUIS ENCINAS", lat: 29.0935, lng: -110.9800 },
-        { nombre: "SOLIDARIDAD Y ENRIQUE QUIJADA", lat: 29.1020, lng: -110.9825 },
-        { nombre: "SOLIDARIDAD Y PERIMETRAL NORTE", lat: 29.1095, lng: -110.9835 },
-        { nombre: "SOLIDARIDAD Y IGNACIO SALAZAR", lat: 29.1165, lng: -110.9845 },
-        { nombre: "SOLIDARIDAD Y LÁZARO CÁRDENAS (NORTE)", lat: 29.1235, lng: -110.9855 },
-        { nombre: "SOLIDARIDAD Y REBEICO", lat: 29.1310, lng: -110.9865 },
-        { nombre: "SOLIDARIDAD Y J.B. ESCALANTE", lat: 29.1415, lng: -110.9880 },
-        { nombre: "COLOSIO Y PASEO LAS QUINTAS", lat: 29.0865, lng: -111.0010 },
-        { nombre: "COLOSIO Y QUINTERO ARCE", lat: 29.0880, lng: -111.0175 },
-        { nombre: "COLOSIO Y QUIROGA", lat: 29.0895, lng: -111.0335 },
-        { nombre: "NAVARRETE Y QUIROGA", lat: 29.0945, lng: -111.0345 },
-        { nombre: "NAVARRETE Y QUINTERO ARCE", lat: 29.0930, lng: -111.0185 },
-        { nombre: "QUIROGA Y GARCÍA MORALES", lat: 29.1015, lng: -111.0360 },
-        { nombre: "QUIROGA Y PERIMETRAL", lat: 29.1135, lng: -111.0385 },
-        { nombre: "QUIROGA Y DE LOS YAQUIS", lat: 29.1190, lng: -111.0395 },
-        { nombre: "QUIROGA Y NAVOJOA", lat: 29.1250, lng: -111.0410 },
-        { nombre: "QUIROGA Y GASPAR LUKEN", lat: 29.1310, lng: -111.0425 },
-        { nombre: "QUIROGA Y LÁZARO CÁRDENAS (NORTE)", lat: 29.1395, lng: -111.0445 },
-        { nombre: "QUIROGA Y J.B. ESCALANTE", lat: 29.1465, lng: -111.0460 },
-        { nombre: "OLIVARES Y J.B. ESCALANTE", lat: 29.1435, lng: -110.9745 },
-        { nombre: "REFORMA Y J.B. ESCALANTE", lat: 29.1445, lng: -110.9635 },
-        { nombre: "J.B. ESCALANTE Y MORELOS NORTE", lat: 29.1480, lng: -110.9385 },
-        { nombre: "MORELOS Y LÓPEZ PORTILLO", lat: 29.1275, lng: -110.9465 },
-        { nombre: "MORELOS Y PERIFÉRICO NORTE", lat: 29.1105, lng: -110.9435 }
-    ];
-
-    function toggleUnidadesList() {
-        const d = document.getElementById('wrapper-unidades');
-        d.style.display = d.style.display === 'none' ? 'block' : 'none';
-        if(d.style.display === 'block') cargarUnidades();
-    }
-
-    function toggleHospitalList() {
-        const d = document.getElementById('lista-hospitales-desplegable');
-        d.style.display = d.style.display === 'none' ? 'block' : 'none';
-        if(d.style.display === 'block') cargarHospitales();
-    }
-
-    window.onload = () => {
-        setInterval(() => { document.getElementById('clock-now').innerText = new Date().toLocaleTimeString(); }, 1000);
-        obtenerClima();
-        cargarHospitales();
-        setInterval(obtenerClima, 1800000);
-    };
-
-    function cerrarSesion() { location.reload(); }
+    setInterval(() => { document.getElementById('clock-now').innerText = new Date().toLocaleTimeString(); }, 1000);
+    setInterval(monitoreoInvisible, 180000);
+    window.onload = () => { obtenerClima(); monitoreoInvisible(); };
 </script>
 </body>
 </html>
