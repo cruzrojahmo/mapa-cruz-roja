@@ -46,6 +46,13 @@
 
         @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
+        /* Botón Modo Oscuro Flotante para no mover el mapa */
+        .dark-mode-toggle { 
+            position: absolute; top: 85px; right: 30px; z-index: 1000; 
+            background: var(--rojo-cr); color: white; border: none; border-radius: 20px; 
+            padding: 8px 15px; cursor: pointer; font-size: 11px; font-weight: bold;
+        }
+
         .info-card { position: absolute; bottom: 20px; right: 20px; width: 240px; background: var(--card-bg); padding: 15px; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.2); z-index: 1100; display: none; border-left: 5px solid var(--rojo-cr); color: var(--text-color); }
     </style>
 </head>
@@ -174,18 +181,19 @@
         marquee.innerText = reportes.length > 0 ? reportes.join(" | ") : "✅ SIN REPORTES VIALES EN CRUCEROS";
     }
 
+    // CARGAR RIESGO: Respetando estilos del GeoJSON
     async function cargarZonasRiesgo() {
         if(riesgoLayer.getLayers().length > 0) { riesgoLayer.clearLayers(); map.removeLayer(riesgoLayer); return; }
         try {
             const resp = await fetch(ZONAS_RIESGO_URL);
             const data = await resp.json();
             const geojsonLayer = L.geoJSON(data, {
-                style: (f) => ({ fillColor: '#FF0000', weight: 2, opacity: 1, color: 'white', fillOpacity: 0.5 }),
                 onEachFeature: (f, l) => {
                     l.bindPopup(`<b>${f.properties.name || 'Zona de Riesgo'}</b><br>Nivel: ${f.properties.nivel_riesgo || 'Alto'}`);
                 }
             });
             riesgoLayer.addLayer(geojsonLayer); riesgoLayer.addTo(map);
+            map.fitBounds(geojsonLayer.getBounds());
         } catch (e) { console.error("Error cargando riesgo:", e); }
     }
 
@@ -229,6 +237,7 @@
         map.flyTo([lat, lon], 15);
     }
 
+    // LISTA UNIDADES: Lógica de colores por categoría
     async function toggleUnidadesList() { 
         const w = document.getElementById('wrapper-unidades'); 
         if (w.style.display === 'none') {
@@ -236,7 +245,18 @@
             const resp = await fetch(UNIDADES_CSV_URL); const data = await resp.text();
             document.getElementById('lista-unidades-desplegable').innerHTML = data.split(/\r?\n/).slice(1).map(r => {
                 const c = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                return `<div style="padding:8px;font-size:11px;cursor:pointer;border-bottom:1px solid #bbb;background:#cecece;" onclick="mostrarUnidad('${c[0]}','${c[2]}','${c[3]}')"><b>${c[0]}</b></div>`;
+                if(!c[0]) return '';
+                
+                let estado = c[1].toLowerCase();
+                let dotClass = "dot-fuera";
+                if(estado.includes("turno")) dotClass = "dot-turno";
+                else if(estado.includes("especial")) dotClass = "dot-especial";
+                else if(estado.includes("alerta")) dotClass = "dot-alerta";
+
+                return `<div style="padding:8px;font-size:11px;cursor:pointer;border-bottom:1px solid #bbb;background:#cecece;display:flex;align-items:center;" onclick="mostrarUnidad('${c[0]}','${c[2]}','${c[3]}')">
+                            <span class="status-dot ${dotClass}"></span>
+                            <b>${c[0].replace(/"/g,'')}</b>
+                        </div>`;
             }).join('');
         } else w.style.display = 'none'; 
     }
