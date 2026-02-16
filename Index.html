@@ -124,7 +124,7 @@
 
     // Hospitales y Bases (Inmutables)
     const hospIcon = L.icon({ iconUrl: "placeholder.png", iconSize: [30, 30] });
-    [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.0647, -110.9613, "Hospital CIMA"]].forEach(h => L.marker([h[0], h[1]], {icon: hospIcon}).bindPopup(h[2]).addTo(hospitalLayer));
+    [[29.0814, -111.0037, "Hospital General de Especialidades"],[29.0864, -110.9621, "IMSS HGZ 15"],[29.1148, -110.9486, "Hospital Militar Regional"],[29.1159, -110.9725, "SSA Hospital Integral de la Mujer"],[29.1163, -110.9717, "SSA Hospital Infantil del State"],[29.0814, -110.9493, "Hospital Licona"],[29.0814, -110.9505, "Centro Médico del Noroeste"],[29.0896, -110.9521, "Hospital San diego de Alcalá"],[29.1040, -110.9533, "IMSS HGZ 02"],[29.0966, -110.9536, "ISSSTESON Dr. Ignacio Chavez"],[29.1101, -110.9507, "ISSSTE Dr. Fernando Ocaranza"],[29.1206, -110.9519, "Hospital San Diego"],[29.0987, -111.0015, "IMSS HGZ 14"], [29.0647, -110.9613, "Hospital CIMA"]].forEach(h => L.marker([h[0], h[1]], {icon: hospIcon}).bindPopup(h[2]).addTo(hospitalLayer));
     [{ n: "Base Sur", c: [29.0564, -110.9537] }, { n: "Base Centro", c: [29.0904, -110.9703] }, { n: "Base Norte", c: [29.1418, -110.9853] }].forEach(b => L.marker(b.c, {icon: L.icon({iconUrl:'bases.png',iconSize:[30,30]})}).bindPopup(b.n).addTo(basesLayer));
 
     L.control.layers(null, { "🏥 Hospitales": hospitalLayer, "🚑 Bases CR": basesLayer, "🚗 Tráfico Real": googleTraffic, "⚠️ Riesgo": riesgoLayer }, { collapsed: false }).addTo(map);
