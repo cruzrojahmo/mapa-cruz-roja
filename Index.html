@@ -68,9 +68,21 @@
         </div>
 
         <div class="dashboard-grid">
-            <div class="stat-card"><div style="font-size:11px;opacity:0.7;">ALERTAS</div><div id="alerta-status" style="font-size:18px;font-weight:700;color:#2ecc71;">SIN ALERTAS</div></div>
-            <div class="stat-card"><div style="font-size:11px;opacity:0.7;">CLIMA HMO</div><div id="clima-info" style="font-size:22px;font-weight:700;">--°C</div></div>
-            <div class="stat-card"><div style="font-size:11px;opacity:0.7;">MONITOREO</div><div style="font-size:22px;font-weight:700;">51 PUNTOS</div></div>
+            <div class="stat-card">
+                <div style="font-size: 11px; opacity: 0.7; font-weight:600;">ALERTAS METEOROLÓGICAS</div>
+                <div id="alerta-status" style="font-size: 18px; font-weight:700; color: #2ecc71;">SIN ALERTAS</div>
+                <div id="alerta-desc" style="font-size: 10px; opacity: 0.6; margin-top:5px;">OPERACIÓN NORMAL</div>
+            </div>
+            <div class="stat-card">
+                <div style="font-size: 11px; opacity: 0.7; font-weight:600;">CLIMA HERMOSILLO</div>
+                <div id="clima-info" style="font-size: 22px; font-weight:700;">--°C</div>
+                <div id="clima-desc" style="font-size: 10px; opacity: 0.6; margin-top:5px;">Cargando...</div>
+            </div>
+            <div class="stat-card">
+                <div style="font-size: 11px; opacity: 0.7; font-weight:600;">PRÓXIMO RELEVO</div>
+                <div id="relevo-timer" style="font-size: 22px; font-weight:700;">--:--:--</div>
+                <div style="font-size: 10px; opacity: 0.6; margin-top:5px;">PARA SIGUIENTE RELEVO</div>
+            </div>
         </div>
 
         <button class="dark-mode-toggle" onclick="toggleDarkMode()" id="btn-dark">🌙 Modo Oscuro</button>
@@ -95,7 +107,7 @@
     const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
     const SHEET_HOSPITALES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv';
     const UNIDADES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4_Q6g0WAkAHw8t7ZONnY_xppTfxr0Gh736C9IwPgDIM4P2-zDsiPau4HGtACULSg13LlAPuZgbiR8/pub?output=csv';
-    const ZONAS_RIESGO_URL = 'https://raw.githubusercontent.com/andresmelendrezm-ops/mapa-cruz-roja/refs/heads/main/zonas_riesgo.geojson';
+    const ZONAS_RIESGO_URL = 'https://raw.githubusercontent.com/cruzrojahmo/mapa-cruz-roja/refs/heads/main/zonas_riesgo.geojson';
 
     const crucerosCoords = [
         {n:"CLOUTHIER Y LIBERTAD", l:[29.0432, -110.9705]}, {n:"SOLIDARIDAD Y VILDOSOLA", l:[29.0628, -110.9562]}, {n:"GANADEROS Y PERIFERICO SUR", l:[29.0495, -110.9412]}, {n:"LAZARO CARDENAS Y SOLIDARIDAD", l:[29.0520, -110.9710]},
@@ -150,7 +162,7 @@
                     if(i < 3) reportes.push("📢 " + item.querySelector("title").textContent.toUpperCase()); 
                 });
             }
-            marquee.innerText = reportes.length > 0 ? reportes.join(" | ") : "✅ SIN REPORTES VIALES EN LOS 51 CRUCEROS CRÍTICOS";
+            marquee.innerText = reportes.length > 0 ? reportes.join(" | ") : "✅ SIN REPORTES VIALES";
         } catch(e) { marquee.innerText = "Sincronizando flujo vial de Hermosillo..."; }
     }
 
@@ -194,7 +206,7 @@
     }
 
     setInterval(() => { document.getElementById('clock-now').innerText = new Date().toLocaleTimeString(); }, 1000);
-    setInterval(monitoreoInvisible, 180000);
+    setInterval(monitoreoInvisible, 60000);
     window.onload = () => { obtenerClima(); monitoreoInvisible(); };
 </script>
 </body>
