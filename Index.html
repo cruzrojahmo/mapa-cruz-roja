@@ -192,6 +192,9 @@
             const resp = await fetch(ZONAS_RIESGO_URL);
             const data = await resp.json();
             const geojsonLayer = L.geoJSON(data, {
+                style: function(feature) {
+                    return feature.properties;
+                },
                 onEachFeature: (f, l) => {
                     l.bindPopup(`<b>${f.properties.name || 'Zona de Riesgo'}</b><br>Nivel: ${f.properties.nivel_riesgo || 'Alto'}`);
                 }
