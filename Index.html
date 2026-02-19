@@ -71,7 +71,7 @@
         <div class="sidebar-logo"><img src="crhmologo.png" alt="Logo"></div>
         
         <div class="ia-chat-container">
-            <div style="font-size: 10px; font-weight: bold; margin-bottom: 5px; color: var(--rojo-cr);">🤖 ASISTENTE PADSE IA</div>
+            <div style="font-size: 10px; font-weight: bold; margin-bottom: 5px; color: var(--rojo-cr);">🤖 ASISTENTE IA</div>
             <div id="ia-output" class="ia-chat-output">Escribe una pregunta sobre hospitales o unidades...</div>
             <div class="ia-input-group">
                 <input type="text" id="ia-input" class="ia-input" placeholder="¿Qué hospital recomiendas?">
@@ -151,18 +151,17 @@
         
         output.innerText = "Pensando...";
         
-        // Contexto extraído de tus datos reales
+        // Contexto de datos reales del mapa
         const hospitalData = hospitalesData.map(h => h[2]).join(", ");
         
         const prompt = `Actúa como un asistente de despacho de Cruz Roja Hermosillo. 
-        Contexto: Tienes acceso a estos hospitales: ${hospitalData}. 
-        Misión: Responde dudas sobre ubicación y protocolos. 
-        Pregunta del usuario: ${input}. 
-        Respuesta breve (máximo 35 palabras):`;
+        Hospitales conocidos: ${hospitalData}. 
+        Pregunta: ${input}. 
+        Responde brevemente (máx 35 palabras):`;
 
         try {
-            // Usamos el endpoint v1 estable
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            // Cambiamos a v1beta para asegurar compatibilidad con gemini-1.5-flash
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
             const response = await fetch(url, {
                 method: "POST",
@@ -174,22 +173,20 @@
 
             const data = await response.json();
 
-            // Si la API responde con un error específico (como API Key inválida)
             if (data.error) {
-                console.error("Detalle del error:", data.error);
-                output.innerText = "Error: " + data.error.message;
+                console.error("Detalle:", data.error);
+                output.innerText = "Error API: " + data.error.message;
                 return;
             }
 
             if (data.candidates && data.candidates[0].content) {
                 output.innerText = data.candidates[0].content.parts[0].text;
             } else {
-                output.innerText = "La IA no pudo generar una respuesta.";
+                output.innerText = "No se pudo generar respuesta.";
             }
 
         } catch (e) {
-            console.error("Error de red:", e);
-            output.innerText = "Error de conexión. Revisa tu internet o la consola (F12).";
+            output.innerText = "Error de conexión. Revisa consola.";
         }
         document.getElementById('ia-input').value = "";
     }
