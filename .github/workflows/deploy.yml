@@ -17,9 +17,8 @@ jobs:
 
       - name: Inyectar API Key
         run: |
-          # Usamos un delimitador diferente para evitar conflictos con caracteres especiales
+          # Cambiamos index.html por Index.html para que coincida con tu archivo real
           sed -i 's|const GEMINI_API_KEY = "TU_API_KEY_AQUI";|const GEMINI_API_KEY = "${{ secrets.GEMINI_KEY }}";|g' Index.html
-
       - name: Configurar Pages
         uses: actions/configure-pages@v4
 
