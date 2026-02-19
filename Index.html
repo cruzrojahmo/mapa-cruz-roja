@@ -149,32 +149,46 @@
     const output = document.getElementById('ia-output');
     if (!input) return;
     
-    output.innerText = "Conectando...";
+    output.innerText = "Conectando con central...";
     
+    // Simplificamos el contexto para evitar errores de lectura
+    const promptText = `Eres un asistente de Cruz Roja Hermosillo. Responde de forma muy breve a: ${input}`;
+
     try {
-        // Usamos gemini-pro que es el modelo estándar de compatibilidad
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+        // Probamos con el endpoint v1 (estable) y el modelo flash directo
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: "Eres un asistente de Cruz Roja. Responde corto: " + input }] }]
+                contents: [{
+                    parts: [{ text: promptText }]
+                }]
             })
         });
 
         const data = await response.json();
 
         if (data.error) {
-            output.innerText = "Error de activación: " + data.error.message;
-        } else {
-            output.innerText = data.candidates[0].content.parts[0].text;
+            // Si el error persiste, mostramos un mensaje que nos ayude a diagnosticar
+            console.error("Detalle técnico:", data.error);
+            output.innerText = "Error de permisos: Asegúrate de que la API Key sea de 'Google AI Studio'.";
+            return;
         }
-    } catch (e) {
-        output.innerText = "Error de red o API bloqueada.";
-    }
-}
 
+        if (data.candidates && data.candidates[0].content) {
+            output.innerText = data.candidates[0].content.parts[0].text;
+        } else {
+            output.innerText = "Respuesta vacía del servidor.";
+        }
+
+    } catch (e) {
+        output.innerText = "Error de conexión local.";
+        console.error(e);
+    }
+    document.getElementById('ia-input').value = "";
+}
     const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
     const SHEET_HOSPITALES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv';
     const UNIDADES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4_Q6g0WAkAHw8t7ZONnY_xppTfxr0Gh736C9IwPgDIM4P2-zDsiPau4HGtACULSg13LlAPuZgbiR8/pub?output=csv';
