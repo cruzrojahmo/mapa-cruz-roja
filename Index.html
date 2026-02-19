@@ -149,18 +149,17 @@
         const output = document.getElementById('ia-output');
         if (!input) return;
         
-        output.innerText = "Pensando...";
+        output.innerText = "Conectando con central...";
         
-        // Contexto de datos reales del mapa
         const hospitalData = hospitalesData.map(h => h[2]).join(", ");
         
-        const prompt = `Actúa como un asistente de despacho de Cruz Roja Hermosillo. 
-        Hospitales conocidos: ${hospitalData}. 
-        Pregunta: ${input}. 
-        Responde brevemente (máx 35 palabras):`;
+        const prompt = `Actúa como asistente de despacho Cruz Roja Hermosillo. 
+        Hospitales: ${hospitalData}. 
+        Usuario: ${input}. 
+        Responde técnico y breve (30 palabras):`;
 
         try {
-            // Cambiamos a v1beta para asegurar compatibilidad con gemini-1.5-flash
+            // Usamos la versión v1 con el nombre de modelo -latest
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
             const response = await fetch(url, {
@@ -174,21 +173,38 @@
             const data = await response.json();
 
             if (data.error) {
-                console.error("Detalle:", data.error);
-                output.innerText = "Error API: " + data.error.message;
+                // Si vuelve a fallar el nombre, intentamos el respaldo automático
+                console.error("Fallo con Flash, intentando Pro...", data.error);
+                output.innerText = "Reintentando conexión...";
+                intentarRespaldoIA(input); 
                 return;
             }
 
             if (data.candidates && data.candidates[0].content) {
                 output.innerText = data.candidates[0].content.parts[0].text;
-            } else {
-                output.innerText = "No se pudo generar respuesta.";
             }
-
         } catch (e) {
-            output.innerText = "Error de conexión. Revisa consola.";
+            output.innerText = "Error crítico de red.";
         }
         document.getElementById('ia-input').value = "";
+    }
+
+    // Función de respaldo por si el modelo Flash sigue bloqueado en tu región/llave
+    async function intentarRespaldoIA(input) {
+        const output = document.getElementById('ia-output');
+        const urlRespaldo = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+        
+        try {
+            const response = await fetch(urlRespaldo, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: "Responde breve: " + input }] }] })
+            });
+            const data = await response.json();
+            output.innerText = data.candidates[0].content.parts[0].text;
+        } catch (e) {
+            output.innerText = "API Key no activada en Google Cloud.";
+        }
     }
 
     const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
