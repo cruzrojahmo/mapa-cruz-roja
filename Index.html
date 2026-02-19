@@ -184,24 +184,21 @@
         crucerosCoords.forEach(c => { if(Math.random() > 0.95) reportes.push(`⚠️ TRÁFICO LENTO EN ${c.n}`); });
         marquee.innerText = reportes.length > 0 ? reportes.join(" | ") : "✅ SIN REPORTES VIALES EN CRUCEROS";
     }
-
-    // CARGAR RIESGO: Respetando estilos del GeoJSON
-    async function cargarZonasRiesgo() {
+    
+   async function cargarZonasRiesgo() {
         if(riesgoLayer.getLayers().length > 0) { riesgoLayer.clearLayers(); map.removeLayer(riesgoLayer); return; }
         try {
             const resp = await fetch(ZONAS_RIESGO_URL);
             const data = await resp.json();
             const geojsonLayer = L.geoJSON(data, {
-                style: function(feature) {
-                    return feature.properties;
-                },
+                style: (f) => ({ fillColor: f.properties.fill || f.properties.color || '#FF0000', weight: 2, opacity: 1, color: f.properties.stroke || 'white', fillOpacity: f.properties['fill-opacity'] || 0.5 }),
                 onEachFeature: (f, l) => {
-                    l.bindPopup(`<b>${f.properties.name || 'Zona de Riesgo'}</b><br>Nivel: ${f.properties.nivel_riesgo || 'Alto'}`);
+                    l.bindTooltip(f.properties.name || f.properties.nombre, { permanent: true, direction: 'center', className: 'etiqueta-riesgo' });
+                    l.bindPopup(`<b>${f.properties.name || f.properties.nombre}</b><br>Nivel de Riesgo: ${f.properties.nivel_riesgo || 'No definido'}`);
                 }
             });
-            riesgoLayer.addLayer(geojsonLayer); riesgoLayer.addTo(map);
-            map.fitBounds(geojsonLayer.getBounds());
-        } catch (e) { console.error("Error cargando riesgo:", e); }
+            riesgoLayer.addLayer(geojsonLayer); riesgoLayer.addTo(map); map.fitBounds(geojsonLayer.getBounds());
+        } catch (e) { console.error(e); }
     }
 
     function actualizarDashboard() {
