@@ -145,67 +145,35 @@
     const GEMINI_API_KEY = "AIzaSyABsH6Y42LA6uGYHXOMJi1r8uT4HErLTlI";
     
     async function preguntarIA() {
-        const input = document.getElementById('ia-input').value;
-        const output = document.getElementById('ia-output');
-        if (!input) return;
+    const input = document.getElementById('ia-input').value;
+    const output = document.getElementById('ia-output');
+    if (!input) return;
+    
+    output.innerText = "Conectando...";
+    
+    try {
+        // Usamos gemini-pro que es el modelo estándar de compatibilidad
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
         
-        output.innerText = "Conectando con central...";
-        
-        const hospitalData = hospitalesData.map(h => h[2]).join(", ");
-        
-        const prompt = `Actúa como asistente de despacho Cruz Roja Hermosillo. 
-        Hospitales: ${hospitalData}. 
-        Usuario: ${input}. 
-        Responde técnico y breve (30 palabras):`;
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: "Eres un asistente de Cruz Roja. Responde corto: " + input }] }]
+            })
+        });
 
-        try {
-            // Usamos la versión v1 con el nombre de modelo -latest
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-            
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }]
-                })
-            });
+        const data = await response.json();
 
-            const data = await response.json();
-
-            if (data.error) {
-                // Si vuelve a fallar el nombre, intentamos el respaldo automático
-                console.error("Fallo con Flash, intentando Pro...", data.error);
-                output.innerText = "Reintentando conexión...";
-                intentarRespaldoIA(input); 
-                return;
-            }
-
-            if (data.candidates && data.candidates[0].content) {
-                output.innerText = data.candidates[0].content.parts[0].text;
-            }
-        } catch (e) {
-            output.innerText = "Error crítico de red.";
-        }
-        document.getElementById('ia-input').value = "";
-    }
-
-    // Función de respaldo por si el modelo Flash sigue bloqueado en tu región/llave
-    async function intentarRespaldoIA(input) {
-        const output = document.getElementById('ia-output');
-        const urlRespaldo = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
-        
-        try {
-            const response = await fetch(urlRespaldo, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ contents: [{ parts: [{ text: "Responde breve: " + input }] }] })
-            });
-            const data = await response.json();
+        if (data.error) {
+            output.innerText = "Error de activación: " + data.error.message;
+        } else {
             output.innerText = data.candidates[0].content.parts[0].text;
-        } catch (e) {
-            output.innerText = "API Key no activada en Google Cloud.";
         }
+    } catch (e) {
+        output.innerText = "Error de red o API bloqueada.";
     }
+}
 
     const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
     const SHEET_HOSPITALES_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTh7H5-srU1-anbqTEuHtC5BYciljJuqQP36afOD7OouN9jqeBHvHiMfRdGmHCdRG_MX2bGPoOjws07/pub?output=csv';
