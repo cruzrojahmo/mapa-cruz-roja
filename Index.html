@@ -149,43 +149,38 @@
     const output = document.getElementById('ia-output');
     if (!input) return;
     
-    output.innerText = "Conectando con central...";
-    
-    // Simplificamos el contexto para evitar errores de lectura
-    const promptText = `Eres un asistente de Cruz Roja Hermosillo. Responde de forma muy breve a: ${input}`;
+    output.innerText = "Conectando...";
+
+    // Contexto simplificado para que la IA sepa qué responder
+    const prompt = {
+        contents: [{
+            parts: [{ text: `Eres un asistente de Cruz Roja Hermosillo. Responde de forma técnica y muy breve (máximo 20 palabras) a esta consulta: ${input}` }]
+        }]
+    };
 
     try {
-        // Probamos con el endpoint v1 (estable) y el modelo flash directo
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // Esta es la URL exacta y estable para llaves de AI Studio
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         const response = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: promptText }]
-                }]
-            })
+            body: JSON.stringify(prompt)
         });
 
         const data = await response.json();
 
         if (data.error) {
-            // Si el error persiste, mostramos un mensaje que nos ayude a diagnosticar
-            console.error("Detalle técnico:", data.error);
-            output.innerText = "Error de permisos: Asegúrate de que la API Key sea de 'Google AI Studio'.";
-            return;
-        }
-
-        if (data.candidates && data.candidates[0].content) {
+            // Si hay error, lo mostramos detallado para saber qué falta
+            output.innerText = "Error: " + data.error.message;
+            console.error("Detalle de la API:", data.error);
+        } else if (data.candidates && data.candidates[0].content) {
             output.innerText = data.candidates[0].content.parts[0].text;
         } else {
-            output.innerText = "Respuesta vacía del servidor.";
+            output.innerText = "No se recibió respuesta.";
         }
-
     } catch (e) {
-        output.innerText = "Error de conexión local.";
-        console.error(e);
+        output.innerText = "Error de conexión. Revisa internet.";
     }
     document.getElementById('ia-input').value = "";
 }
