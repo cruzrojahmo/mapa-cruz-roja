@@ -17,16 +17,13 @@ jobs:
 
       - name: Inyectar API Key
         run: |
-          # Cambiamos index.html por Index.html para que coincida con tu archivo real
+          # Usamos Index.html con mayúscula como aparece en tu repositorio
           sed -i 's|const GEMINI_API_KEY = "TU_API_KEY_AQUI";|const GEMINI_API_KEY = "${{ secrets.GEMINI_KEY }}";|g' Index.html
-      - name: Configurar Pages
-        uses: actions/configure-pages@v4
 
-      - name: Subir artefacto
+      - name: Subir a GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
 
-      - name: Desplegar a GitHub Pages
-        id: deployment
+      - name: Desplegar
         uses: actions/deploy-pages@v4
