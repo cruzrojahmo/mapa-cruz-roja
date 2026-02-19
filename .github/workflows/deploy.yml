@@ -1,10 +1,15 @@
 name: Deploy Mapa PADSE
 on:
   push:
-    branches: ["main"] # O el nombre de tu rama principal
+    branches: ["main"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -12,23 +17,17 @@ jobs:
 
       - name: Inyectar API Key
         run: |
-          sed -i "s/TU_API_KEY_AQUI/${{ secrets.GEMINI_KEY }}/g" index.html
+          # Usamos un delimitador diferente para evitar conflictos con caracteres especiales
+          sed -i 's|const GEMINI_API_KEY = "TU_API_KEY_AQUI";|const GEMINI_API_KEY = "${{ secrets.GEMINI_KEY }}";|g' index.html
 
-      - name: Upload Pages artifact
+      - name: Configurar Pages
+        uses: actions/configure-pages@v4
+
+      - name: Subir artefacto
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
 
-  deploy:
-    needs: build
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to GitHub Pages
+      - name: Desplegar a GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
