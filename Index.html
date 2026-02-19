@@ -151,37 +151,44 @@
     
     output.innerText = "Conectando...";
 
-    // Contexto simplificado para que la IA sepa qué responder
-    const prompt = {
-        contents: [{
-            parts: [{ text: `Eres un asistente de Cruz Roja Hermosillo. Responde de forma técnica y muy breve (máximo 20 palabras) a esta consulta: ${input}` }]
+    // Estructura de datos exacta para Gemini AI Studio
+    const datosEnvio = {
+        "contents": [{
+            "parts": [{
+                "text": "Eres un asistente de despacho para Cruz Roja Hermosillo. Responde de forma técnica y muy breve (máximo 20 palabras) a esta consulta: " + input
+            }]
         }]
     };
 
     try {
-        // Esta es la URL exacta y estable para llaves de AI Studio
+        // Usamos la URL v1beta que es la más compatible con llaves nuevas
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
         
         const response = await fetch(url, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(prompt)
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(datosEnvio)
         });
 
         const data = await response.json();
 
         if (data.error) {
-            // Si hay error, lo mostramos detallado para saber qué falta
+            // Si hay error, mostramos el mensaje técnico para saber qué falta
             output.innerText = "Error: " + data.error.message;
-            console.error("Detalle de la API:", data.error);
+            console.error("Detalle:", data.error);
         } else if (data.candidates && data.candidates[0].content) {
+            // Si todo sale bien, mostramos la respuesta de la IA
             output.innerText = data.candidates[0].content.parts[0].text;
         } else {
-            output.innerText = "No se recibió respuesta.";
+            output.innerText = "No hubo respuesta del modelo.";
         }
     } catch (e) {
-        output.innerText = "Error de conexión. Revisa internet.";
+        output.innerText = "Error de red. Revisa tu conexión.";
+        console.error("Error Fetch:", e);
     }
+    
     document.getElementById('ia-input').value = "";
 }
     const API_KEY = "b99d75364d37e9fd2bedb86b7e42743e";
